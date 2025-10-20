@@ -1,0 +1,469 @@
+@page "/query"
+@page "/playground"
+@inject IJSRuntime JSRuntime
+@using SharpGraph.Core
+@using SharpGraph.Core.GraphQL
+@using System.Text.Json
+
+<PageTitle>GraphQL Playground - SharpGraph IDE</PageTitle>
+
+<div class="row">
+    <!-- Query Editor -->
+    <div class="col-lg-6">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fab fa-graphql mr-2"></i>
+                    GraphQL Query
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-primary btn-sm" @onclick="ExecuteQuery">
+                        <i class="fas fa-play mr-1"></i>
+                        Execute (Ctrl+Enter)
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm ml-1" @onclick="FormatQuery">
+                        <i class="fas fa-code mr-1"></i>
+                        Format
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm ml-1" @onclick="ClearEditor">
+                        <i class="fas fa-trash mr-1"></i>
+                        Clear
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <textarea @bind="QueryText" @onkeydown="HandleKeyDown" 
+                         class="form-control graphql-editor border-0" 
+                         style="min-height: 400px; font-family: 'Consolas', monospace; font-size: 14px;"
+                         placeholder="Enter your GraphQL query here...
+
+Example:
+{
+  users {
+    id
+    name
+    email
+    posts {
+      title
+      content
+    }
+  }
+}"></textarea>
+            </div>
+            <div class="card-footer">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Press Ctrl+Enter to execute
+                        </small>
+                    </div>
+                    <div class="col-sm-6 text-right">
+                        <small class="text-muted">
+                            Lines: @GetLineCount() | Characters: @QueryText.Length
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Query Variables -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-brackets-curly mr-2"></i>
+                    Variables (JSON)
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <textarea @bind="VariablesText" 
+                         class="form-control border-0" 
+                         style="min-height: 120px; font-family: 'Consolas', monospace; font-size: 14px;"
+                         placeholder='{ "userId": "123" }'></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="col-lg-6">
+        <div class="card card-success">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-terminal mr-2"></i>
+                    Query Results
+                </h3>
+                <div class="card-tools">
+                    @if (!string.IsNullOrEmpty(ResultText))
+                    {
+                        <button type="button" class="btn btn-success btn-sm" @onclick="CopyResults">
+                            <i class="fas fa-copy mr-1"></i>
+                            Copy
+                        </button>
+                        <button type="button" class="btn btn-outline-light btn-sm ml-1" @onclick="DownloadResults">
+                            <i class="fas fa-download mr-1"></i>
+                            Download
+                        </button>
+                    }
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="graphql-results" style="min-height: 400px; max-height: 400px; overflow-y: auto;">
+                    @if (IsExecuting)
+                    {
+                        <div class="text-center p-4">
+                            <div class="loading-spinner"></div>
+                            <div class="mt-2">Executing query...</div>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(ResultText))
+                    {
+                        <pre class="p-3 m-0" style="font-size: 13px; line-height: 1.4;">@ResultText</pre>
+                    }
+                    else
+                    {
+                        <div class="text-muted text-center p-4">
+                            <i class="fas fa-play-circle fa-3x mb-3 d-block"></i>
+                            Execute a query to see results here
+                        </div>
+                    }
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(ExecutionTime))
+            {
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-clock mr-1"></i>
+                        Execution time: @ExecutionTime
+                    </small>
+                </div>
+            }
+        </div>
+
+        <!-- Query History -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-history mr-2"></i>
+                    Query History
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" @onclick="ClearHistory">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                @if (QueryHistory.Any())
+                {
+                    @foreach (var query in QueryHistory.Take(10))
+                    {
+                        <div class="border-bottom p-2 query-history-item" @onclick="() => LoadHistoryQuery(query)">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <code class="text-sm">@TruncateQuery(query.Query)</code>
+                                </div>
+                                <small class="text-muted ml-2">@query.Timestamp.ToString("HH:mm")</small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(query.Error))
+                            {
+                                <small class="text-danger">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Error
+                                </small>
+                            }
+                            else
+                            {
+                                <small class="text-success">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Success (@query.ExecutionTime ms)
+                                </small>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted text-center p-3">
+                        No queries executed yet
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Query Examples -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-book mr-2"></i>
+                    Example Queries
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Query</h6>
+                        <button class="btn btn-outline-primary btn-sm mb-2" @onclick="() => LoadExampleQuery(ExampleQueries.BasicQuery)">
+                            Load Example
+                        </button>
+                        <pre class="bg-light p-2 small">@ExampleQueries.BasicQuery</pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Query with Variables</h6>
+                        <button class="btn btn-outline-primary btn-sm mb-2" @onclick="() => LoadExampleQuery(ExampleQueries.VariablesQuery)">
+                            Load Example
+                        </button>
+                        <pre class="bg-light p-2 small">@ExampleQueries.VariablesQuery</pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Mutation</h6>
+                        <button class="btn btn-outline-primary btn-sm mb-2" @onclick="() => LoadExampleQuery(ExampleQueries.MutationQuery)">
+                            Load Example
+                        </button>
+                        <pre class="bg-light p-2 small">@ExampleQueries.MutationQuery</pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Fragment Query</h6>
+                        <button class="btn btn-outline-primary btn-sm mb-2" @onclick="() => LoadExampleQuery(ExampleQueries.FragmentQuery)">
+                            Load Example
+                        </button>
+                        <pre class="bg-light p-2 small">@ExampleQueries.FragmentQuery</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string QueryText { get; set; } = string.Empty;
+    private string VariablesText { get; set; } = string.Empty;
+    private string ResultText { get; set; } = string.Empty;
+    private string ExecutionTime { get; set; } = string.Empty;
+    private bool IsExecuting { get; set; } = false;
+
+    private List<QueryHistoryItem> QueryHistory { get; set; } = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize with a sample query
+            QueryText = ExampleQueries.BasicQuery;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExecuteQuery()
+    {
+        if (string.IsNullOrWhiteSpace(QueryText))
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "Please enter a GraphQL query", "warning");
+            return;
+        }
+
+        IsExecuting = true;
+        var startTime = DateTime.Now;
+        StateHasChanged();
+
+        try
+        {
+            // Simulate query execution (in real implementation, this would use GraphQLExecutor)
+            await Task.Delay(500); // Simulate network delay
+
+            // Mock result
+            var mockResult = new
+            {
+                data = new
+                {
+                    users = new[]
+                    {
+                        new { id = "1", name = "John Doe", email = "john@example.com" },
+                        new { id = "2", name = "Jane Smith", email = "jane@example.com" }
+                    }
+                }
+            };
+
+            var executionTimeMs = (DateTime.Now - startTime).TotalMilliseconds;
+            ExecutionTime = $"{executionTimeMs:F1} ms";
+            ResultText = JsonSerializer.Serialize(mockResult, new JsonSerializerOptions { WriteIndented = true });
+
+            // Add to history
+            QueryHistory.Insert(0, new QueryHistoryItem
+            {
+                Query = QueryText,
+                Variables = VariablesText,
+                Result = ResultText,
+                ExecutionTime = executionTimeMs,
+                Timestamp = DateTime.Now
+            });
+
+            await JSRuntime.InvokeVoidAsync("showAlert", "Query executed successfully", "success");
+        }
+        catch (Exception ex)
+        {
+            var executionTimeMs = (DateTime.Now - startTime).TotalMilliseconds;
+            ExecutionTime = $"{executionTimeMs:F1} ms";
+            ResultText = JsonSerializer.Serialize(new { errors = new[] { new { message = ex.Message } } }, 
+                new JsonSerializerOptions { WriteIndented = true });
+
+            // Add error to history
+            QueryHistory.Insert(0, new QueryHistoryItem
+            {
+                Query = QueryText,
+                Variables = VariablesText,
+                Error = ex.Message,
+                ExecutionTime = executionTimeMs,
+                Timestamp = DateTime.Now
+            });
+
+            await JSRuntime.InvokeVoidAsync("showAlert", $"Query failed: {ex.Message}", "error");
+        }
+        finally
+        {
+            IsExecuting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if ((e.CtrlKey || e.MetaKey) && e.Key == "Enter")
+        {
+            await ExecuteQuery();
+        }
+    }
+
+    private void FormatQuery()
+    {
+        // Basic formatting (in production, you'd use a proper GraphQL formatter)
+        QueryText = QueryText.Trim();
+    }
+
+    private void ClearEditor()
+    {
+        QueryText = string.Empty;
+        VariablesText = string.Empty;
+        ResultText = string.Empty;
+        ExecutionTime = string.Empty;
+    }
+
+    private async Task CopyResults()
+    {
+        await JSRuntime.InvokeVoidAsync("copyToClipboard", ResultText);
+    }
+
+    private async Task DownloadResults()
+    {
+        await JSRuntime.InvokeVoidAsync("exportAsJSON", ResultText, "graphql-results.json");
+    }
+
+    private void LoadHistoryQuery(QueryHistoryItem item)
+    {
+        QueryText = item.Query;
+        VariablesText = item.Variables ?? string.Empty;
+        ResultText = item.Result ?? string.Empty;
+        ExecutionTime = $"{item.ExecutionTime:F1} ms";
+    }
+
+    private void LoadExampleQuery(string query)
+    {
+        QueryText = query;
+        VariablesText = string.Empty;
+        ResultText = string.Empty;
+        ExecutionTime = string.Empty;
+    }
+
+    private void ClearHistory()
+    {
+        QueryHistory.Clear();
+    }
+
+    private int GetLineCount()
+    {
+        return QueryText.Split('\n').Length;
+    }
+
+    private string TruncateQuery(string query)
+    {
+        var firstLine = query.Split('\n')[0].Trim();
+        return firstLine.Length > 50 ? firstLine.Substring(0, 47) + "..." : firstLine;
+    }
+
+    // Data models
+    public class QueryHistoryItem
+    {
+        public string Query { get; set; } = string.Empty;
+        public string? Variables { get; set; }
+        public string? Result { get; set; }
+        public string? Error { get; set; }
+        public double ExecutionTime { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
+    // Example queries
+    public static class ExampleQueries
+    {
+        public const string BasicQuery = @"{
+  users {
+    id
+    name
+    email
+  }
+}";
+
+        public const string VariablesQuery = @"query GetUser($userId: ID!) {
+  user(id: $userId) {
+    id
+    name
+    email
+    posts {
+      title
+      content
+    }
+  }
+}";
+
+        public const string MutationQuery = @"mutation CreateUser($input: UserInput!) {
+  createUser(input: $input) {
+    id
+    name
+    email
+  }
+}";
+
+        public const string FragmentQuery = @"fragment UserInfo on User {
+  id
+  name
+  email
+}
+
+{
+  users {
+    ...UserInfo
+    posts {
+      title
+    }
+  }
+}";
+    }
+}

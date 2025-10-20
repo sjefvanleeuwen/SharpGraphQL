@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace SharpGraph.Examples.Benchmark;
+namespace SharpGraph.Benchmark;
 
 class Program
 {

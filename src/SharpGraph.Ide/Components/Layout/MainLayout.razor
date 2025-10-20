@@ -1,0 +1,236 @@
+﻿@inherits LayoutComponentBase
+
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-dark">
+            <!-- Left navbar links -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                        <i class="fas fa-bars"></i>
+                    </a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="/" class="nav-link">Dashboard</a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="/query" class="nav-link">GraphQL Playground</a>
+                </li>
+            </ul>
+
+            <!-- Right navbar links -->
+            <ul class="navbar-nav ml-auto">
+                <!-- Database Status -->
+                <li class="nav-item">
+                    <a class="nav-link" href="#" title="Database Status">
+                        <i class="fas fa-database text-success"></i>
+                        <span class="badge badge-success navbar-badge">Online</span>
+                    </a>
+                </li>
+                
+                <!-- Settings -->
+                <li class="nav-item">
+                    <a class="nav-link" href="/settings" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Sidebar Container -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- Brand Logo -->
+            <a href="/" class="brand-link">
+                <i class="fas fa-project-diagram brand-image img-circle elevation-3" style="opacity: .8; font-size: 2rem; margin-left: 8px;"></i>
+                <span class="brand-text font-weight-light">SharpGraph IDE</span>
+            </a>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Sidebar Menu -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <!-- Dashboard -->
+                        <li class="nav-item">
+                            <a href="/" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+                        
+                        <!-- Database -->
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-database"></i>
+                                <p>
+                                    Database
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/tables" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Tables</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/schema" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Schema</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/indexes" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Indexes</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        
+                        <!-- GraphQL -->
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fab fa-graphql"></i>
+                                <p>
+                                    GraphQL
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/query" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Playground</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/introspection" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Introspection</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        
+                        <!-- Performance -->
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-chart-line"></i>
+                                <p>
+                                    Performance
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/metrics" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Metrics</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/cache" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Cache Status</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        
+                        <!-- Tools -->
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-tools"></i>
+                                <p>
+                                    Tools
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/import" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Import Data</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/export" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Export Data</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/backup" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Backup</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Settings -->
+                        <li class="nav-item">
+                            <a href="/settings" class="nav-link">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>Settings</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">@GetPageTitle()</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                                <li class="breadcrumb-item active">@GetPageTitle()</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
+                    @Body
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <strong>Copyright &copy; @DateTime.Now.Year <a href="https://github.com/your-org/sharpgraph">SharpGraph</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 1.0.0-prototype
+            </div>
+        </footer>
+    </div>
+    
+    <div id="blazor-error-ui" data-nosnippet>
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+</body>
+
+@code {
+    private string GetPageTitle()
+    {
+        // This would be enhanced to get the actual page title from navigation
+        return "Dashboard";
+    }
+}

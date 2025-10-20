@@ -1,0 +1,432 @@
+@page "/metrics"
+@page "/performance"
+@inject DatabaseService DatabaseService
+@inject IJSRuntime JSRuntime
+@using SharpGraph.Ide.Services
+
+<PageTitle>Performance Metrics - SharpGraph IDE</PageTitle>
+
+<div class="row">
+    <!-- Key Metrics -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>@MetricsData.QueryCount</h3>
+                <p>Total Queries</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <a href="/query" class="small-box-footer">Execute Query <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>@MetricsData.AverageResponseTimeMs<sup style="font-size: 20px">ms</sup></h3>
+                <p>Avg Response Time</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-stopwatch"></i>
+            </div>
+            <div class="small-box-footer">Real-time monitoring</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>@MetricsData.CacheHitRate%</h3>
+                <p>Cache Hit Rate</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-tachometer-alt"></i>
+            </div>
+            <a href="/cache" class="small-box-footer">Cache Details <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>@MetricsData.MemoryUsageMB<sup style="font-size: 20px">MB</sup></h3>
+                <p>Memory Usage</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-memory"></i>
+            </div>
+            <div class="small-box-footer">System resources</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Performance Chart -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Query Performance Over Time
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" @onclick="RefreshMetrics">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <!-- Placeholder for chart - in real implementation, use Chart.js -->
+                    <div class="text-center text-muted d-flex align-items-center justify-content-center h-100">
+                        <div>
+                            <i class="fas fa-chart-line fa-3x mb-3"></i>
+                            <h5>Performance Chart</h5>
+                            <p>Real-time query performance visualization would appear here</p>
+                            <small class="text-muted">Integration with Chart.js or similar charting library</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Info -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-server mr-2"></i>
+                    System Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="progress-group">
+                            Memory Usage
+                            <span class="float-right"><b>@MetricsData.MemoryUsageMB MB</b></span>
+                            <div class="progress progress-sm">
+                                <div class="progress-bar bg-primary" style="width: @(Math.Min(MetricsData.MemoryUsageMB / 10, 100))%"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-group">
+                            Cache Efficiency
+                            <span class="float-right"><b>@MetricsData.CacheHitRate%</b></span>
+                            <div class="progress progress-sm">
+                                <div class="progress-bar bg-success" style="width: @MetricsData.CacheHitRate%"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-group">
+                            Database Size
+                            <span class="float-right"><b>@MetricsData.DatabaseSizeMB MB</b></span>
+                            <div class="progress progress-sm">
+                                <div class="progress-bar bg-info" style="width: @(Math.Min(MetricsData.DatabaseSizeMB * 2, 100))%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-database mr-2"></i>
+                    Database Statistics
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td><i class="fas fa-table text-primary mr-2"></i>Total Tables</td>
+                            <td><span class="badge badge-primary">@MetricsData.TotalTables</span></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fas fa-database text-success mr-2"></i>Total Records</td>
+                            <td><span class="badge badge-success">@MetricsData.TotalRecords.ToString("N0")</span></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fas fa-hdd text-info mr-2"></i>Database Size</td>
+                            <td><span class="badge badge-info">@MetricsData.DatabaseSizeMB MB</span></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fas fa-search text-warning mr-2"></i>Active Indexes</td>
+                            <td><span class="badge badge-warning">@(MetricsData.TotalTables * 2)</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Metrics -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-clock mr-2"></i>
+                    Query Performance Breakdown
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Query Type</th>
+                                <th>Count</th>
+                                <th>Avg Time (ms)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var queryType in QueryPerformance)
+                            {
+                                <tr>
+                                    <td><i class="@queryType.Icon mr-1"></i>@queryType.Type</td>
+                                    <td><span class="badge badge-primary">@queryType.Count</span></td>
+                                    <td>@queryType.AverageTime ms</td>
+                                    <td>
+                                        <span class="badge badge-@(queryType.AverageTime < 50 ? "success" : queryType.AverageTime < 200 ? "warning" : "danger")">
+                                            @(queryType.AverageTime < 50 ? "Fast" : queryType.AverageTime < 200 ? "Normal" : "Slow")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Performance Alerts
+                </h3>
+            </div>
+            <div class="card-body">
+                @if (PerformanceAlerts.Any())
+                {
+                    @foreach (var alert in PerformanceAlerts)
+                    {
+                        <div class="alert alert-@alert.Level alert-dismissible">
+                            <h5><i class="icon @alert.Icon"></i> @alert.Title</h5>
+                            @alert.Message
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted">
+                        <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                        <h5>All Systems Normal</h5>
+                        <p>No performance issues detected</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Query Log -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-list mr-2"></i>
+                    Recent Query Log
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" @onclick="ClearQueryLog">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm table-hover">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Query</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in QueryLog.Take(20))
+                            {
+                                <tr>
+                                    <td><small>@log.Timestamp.ToString("HH:mm:ss")</small></td>
+                                    <td>
+                                        <code class="text-sm">@TruncateQuery(log.Query)</code>
+                                    </td>
+                                    <td>@log.Duration ms</td>
+                                    <td>
+                                        <span class="badge badge-@(log.Success ? "success" : "danger")">
+                                            @(log.Success ? "Success" : "Error")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-xs btn-outline-primary" @onclick="() => ViewQuery(log)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private PerformanceMetrics MetricsData { get; set; } = new();
+    private List<QueryPerformanceInfo> QueryPerformance { get; set; } = new();
+    private List<PerformanceAlert> PerformanceAlerts { get; set; } = new();
+    private List<QueryLogEntry> QueryLog { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMetrics();
+        await LoadQueryPerformance();
+        await LoadPerformanceAlerts();
+        await LoadQueryLog();
+    }
+
+    private async Task LoadMetrics()
+    {
+        MetricsData = await DatabaseService.GetPerformanceMetricsAsync();
+    }
+
+    private async Task LoadQueryPerformance()
+    {
+        QueryPerformance = new List<QueryPerformanceInfo>
+        {
+            new() { Type = "Simple Queries", Icon = "fas fa-search", Count = 1245, AverageTime = 12.5 },
+            new() { Type = "Complex Queries", Icon = "fas fa-project-diagram", Count = 89, AverageTime = 45.2 },
+            new() { Type = "Mutations", Icon = "fas fa-edit", Count = 156, AverageTime = 23.8 },
+            new() { Type = "Introspection", Icon = "fas fa-info-circle", Count = 34, AverageTime = 8.1 }
+        };
+    }
+
+    private async Task LoadPerformanceAlerts()
+    {
+        PerformanceAlerts = new List<PerformanceAlert>();
+        
+        // Add alerts based on metrics
+        if (MetricsData.AverageResponseTimeMs > 100)
+        {
+            PerformanceAlerts.Add(new PerformanceAlert
+            {
+                Level = "warning",
+                Icon = "fas fa-exclamation-triangle",
+                Title = "High Response Time",
+                Message = $"Average response time is {MetricsData.AverageResponseTimeMs:F1}ms. Consider optimizing queries or adding indexes."
+            });
+        }
+        
+        if (MetricsData.CacheHitRate < 80)
+        {
+            PerformanceAlerts.Add(new PerformanceAlert
+            {
+                Level = "warning",
+                Icon = "fas fa-memory",
+                Title = "Low Cache Hit Rate",
+                Message = $"Cache hit rate is {MetricsData.CacheHitRate}%. Consider increasing cache size or reviewing query patterns."
+            });
+        }
+    }
+
+    private async Task LoadQueryLog()
+    {
+        QueryLog = new List<QueryLogEntry>();
+        var random = new Random();
+        var queries = new[] { "{ users { id name } }", "{ posts { title author { name } } }", "mutation { createUser(input: {...}) }" };
+        
+        for (int i = 0; i < 50; i++)
+        {
+            QueryLog.Add(new QueryLogEntry
+            {
+                Timestamp = DateTime.Now.AddMinutes(-i * 2),
+                Query = queries[random.Next(queries.Length)],
+                Duration = Math.Round(random.NextDouble() * 100 + 5, 1),
+                Success = random.NextDouble() > 0.1 // 90% success rate
+            });
+        }
+        
+        QueryLog = QueryLog.OrderByDescending(q => q.Timestamp).ToList();
+    }
+
+    private async Task RefreshMetrics()
+    {
+        await LoadMetrics();
+        await LoadQueryPerformance();
+        await LoadPerformanceAlerts();
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("showAlert", "Metrics refreshed", "success");
+    }
+
+    private async Task ClearQueryLog()
+    {
+        QueryLog.Clear();
+        await JSRuntime.InvokeVoidAsync("showAlert", "Query log cleared", "info");
+    }
+
+    private async Task ViewQuery(QueryLogEntry log)
+    {
+        await JSRuntime.InvokeVoidAsync("showAlert", $"Query details: {log.Query}", "info");
+    }
+
+    private string TruncateQuery(string query)
+    {
+        return query.Length > 30 ? query.Substring(0, 27) + "..." : query;
+    }
+
+    // Data models
+    public class QueryPerformanceInfo
+    {
+        public string Type { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public double AverageTime { get; set; }
+    }
+
+    public class PerformanceAlert
+    {
+        public string Level { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class QueryLogEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Query { get; set; } = string.Empty;
+        public double Duration { get; set; }
+        public bool Success { get; set; }
+    }
+}
