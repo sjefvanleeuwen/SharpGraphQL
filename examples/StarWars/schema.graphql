@@ -1,0 +1,189 @@
+# Star Wars GraphQL Schema
+# Based on the official GraphQL.org example
+
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+
+type Character {
+  id: ID!
+  name: String!
+  appearsIn: [String]!
+  friends: [Character]
+  characterType: String!
+  
+  # Human-specific fields
+  homePlanetId: ID
+  homePlanet: Planet
+  height: Float
+  mass: Float
+  hairColor: String
+  skinColor: String
+  eyeColor: String
+  birthYear: String
+  
+  # Droid-specific fields
+  primaryFunction: String
+  
+  # Relationships
+  films: [Film]
+  starships: [Starship]
+  vehicles: [Vehicle]
+}
+
+type Film {
+  id: ID!
+  title: String!
+  episodeId: Int!
+  openingCrawl: String!
+  director: String!
+  producer: String!
+  releaseDate: String!
+  
+  # Relationships
+  characters: [Character]
+  planets: [Planet]
+  starships: [Starship]
+  vehicles: [Vehicle]
+  species: [Species]
+}
+
+type Planet {
+  id: ID!
+  name: String!
+  rotationPeriod: String
+  orbitalPeriod: String
+  diameter: String
+  climate: String
+  gravity: String
+  terrain: String
+  surfaceWater: String
+  population: String
+  
+  # Relationships
+  residents: [Character]
+}
+
+type Species {
+  id: ID!
+  name: String!
+  classification: String
+  designation: String
+  averageHeight: String
+  skinColors: String
+  hairColors: String
+  eyeColors: String
+  averageLifespan: String
+  homeworld: String
+  language: String
+  
+  # Relationships
+  people: [Character]
+}
+
+type Starship {
+  id: ID!
+  name: String!
+  model: String
+  starshipClass: String
+  manufacturer: String
+  costInCredits: String
+  length: String
+  crew: String
+  passengers: String
+  maxAtmospheringSpeed: String
+  hyperdriveRating: String
+  MGLT: String
+  cargoCapacity: String
+  consumables: String
+  
+  # Relationships
+  pilots: [Character]
+  films: [Film]
+}
+
+type Vehicle {
+  id: ID!
+  name: String!
+  model: String
+  vehicleClass: String
+  manufacturer: String
+  costInCredits: String
+  length: String
+  crew: String
+  passengers: String
+  maxAtmospheringSpeed: String
+  cargoCapacity: String
+  consumables: String
+  
+  # Relationships
+  pilots: [Character]
+  films: [Film]
+}
+
+type Query {
+  character(id: ID!): Character
+  characters: [Character]
+  film(id: ID!): Film
+  films: [Film]
+  planet(id: ID!): Planet
+  planets: [Planet]
+  species(id: ID!): Species
+  allSpecies: [Species]
+  starship(id: ID!): Starship
+  starships: [Starship]
+  vehicle(id: ID!): Vehicle
+  vehicles: [Vehicle]
+}
+
+type Mutation {
+  createCharacter(input: CharacterInput!): Character
+  updateCharacter(id: ID!, input: CharacterInput!): Character
+  deleteCharacter(id: ID!): Boolean
+  
+  createFilm(input: FilmInput!): Film
+  updateFilm(id: ID!, input: FilmInput!): Film
+  deleteFilm(id: ID!): Boolean
+  
+  createPlanet(input: PlanetInput!): Planet
+  updatePlanet(id: ID!, input: PlanetInput!): Planet
+  deletePlanet(id: ID!): Boolean
+}
+
+# Input types for mutations
+input CharacterInput {
+  name: String!
+  characterType: String!
+  appearsIn: [String]
+  height: Float
+  mass: Float
+  hairColor: String
+  skinColor: String
+  eyeColor: String
+  birthYear: String
+  primaryFunction: String
+  homePlanetId: ID
+}
+
+input FilmInput {
+  title: String!
+  episodeId: Int!
+  openingCrawl: String!
+  director: String!
+  producer: String!
+  releaseDate: String!
+}
+
+input PlanetInput {
+  name: String!
+  diameter: String
+  rotationPeriod: String
+  orbitalPeriod: String
+  gravity: String
+  population: String
+  climate: String
+  terrain: String
+  surfaceWater: String
+}
