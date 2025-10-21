@@ -24,7 +24,9 @@ A high-performance, embedded, GraphQL-native database engine written in C# for .
 
 ### Documentation
 
+- [**⚡ Quick Start**](docs/quick-start.md) - Get up and running in 5 minutes with Star Wars example
 - [Getting Started Guide](docs/getting-started.md) - Installation and quick start tutorials
+- [**Filtering & Sorting Guide**](docs/filtering-guide.md) - Prisma-style filtering, sorting, pagination with examples
 - [Features](docs/features.md) - Schema-driven development, GraphQL support, storage engine
 - [Configuration](docs/configuration.md) - Database configuration and settings
 - [API Reference](docs/api-reference.md) - Complete API documentation
@@ -76,6 +78,243 @@ var result = executor.Execute(@"{
     posts { title }
   }
 }");
+```
+
+## Prisma-Style Filtering & Sorting
+
+SharpGraph supports Prisma-style filtering and sorting through Connection types. This provides an intuitive, GraphQL-native way to query and sort data.
+
+### Filtering with `where`
+
+Filter records using field-level conditions:
+
+```graphql
+query SearchCharacters {
+  characters {
+    items(where: {name: {contains: "Luke"}}) {
+      id
+      name
+      characterType
+    }
+  }
+}
+```
+
+**Available filter operators:**
+- `equals`: Exact match
+- `contains`: String contains (case-insensitive)
+- `startsWith`: String starts with
+- `endsWith`: String ends with
+- `gt`: Greater than (for numbers)
+- `lt`: Less than (for numbers)
+- `gte`: Greater than or equal
+- `lte`: Less than or equal
+
+**Combined filters with AND/OR/NOT:**
+
+```graphql
+query FindHumans {
+  characters {
+    items(where: {
+      AND: [
+        {characterType: {equals: "Human"}}
+        {name: {contains: "Solo"}}
+      ]
+    }) {
+      id
+      name
+      characterType
+    }
+  }
+}
+```
+
+### Sorting with `orderBy` (Prisma-style)
+
+Sort by one or multiple fields using Prisma's intuitive syntax:
+
+```graphql
+query SortedCharacters {
+  characters {
+    items(orderBy: [{name: asc}]) {
+      id
+      name
+      characterType
+    }
+  }
+}
+```
+
+**Multiple sort fields (applied in order):**
+
+```graphql
+query MultiSortCharacters {
+  characters {
+    items(orderBy: [{characterType: asc}, {name: asc}]) {
+      id
+      name
+      characterType
+      height
+    }
+  }
+}
+```
+
+### Pagination with `skip` and `take`
+
+Paginate through results:
+
+```graphql
+query PaginatedCharacters {
+  characters {
+    items(skip: 0, take: 10) {
+      id
+      name
+      characterType
+    }
+  }
+}
+```
+
+### Combined: Filter, Sort, and Paginate
+
+```graphql
+query AdvancedQuery {
+  characters {
+    items(
+      where: {characterType: {equals: "Human"}}
+      orderBy: [{name: asc}]
+      skip: 0
+      take: 5
+    ) {
+      id
+      name
+      characterType
+      height
+      mass
+    }
+  }
+}
+```
+
+## Auto-Generated CRUD Mutations
+
+SharpGraph automatically generates Create, Update, and Delete mutations for every entity in your schema. No configuration needed!
+
+### Create Mutation
+
+```graphql
+mutation CreateCharacter {
+  createCharacter(input: {
+    name: "Luke Skywalker"
+    characterType: "Human"
+    appearsIn: ["NEWHOPE", "EMPIRE", "JEDI"]
+    height: 172.72
+    mass: 77.0
+    hairColor: "Blond"
+    skinColor: "Fair"
+    eyeColor: "Blue"
+    birthYear: "19BBY"
+    homePlanetId: "tatooine"
+  }) {
+    id
+    name
+    characterType
+  }
+}
+```
+
+### Update Mutation
+
+```graphql
+mutation UpdateCharacter {
+  updateCharacter(
+    id: "luke"
+    input: {
+      name: "Luke Skywalker (Updated)"
+      height: 173.0
+    }
+  ) {
+    id
+    name
+    height
+  }
+}
+```
+
+### Delete Mutation
+
+```graphql
+mutation DeleteCharacter {
+  deleteCharacter(id: "luke")
+}
+```
+
+### Bulk Operations Example
+
+```graphql
+mutation CreateMultiple {
+  c1: createCharacter(input: {
+    name: "Character 1"
+    characterType: "Human"
+  }) {
+    id
+    name
+  }
+  
+  c2: createCharacter(input: {
+    name: "Character 2"
+    characterType: "Droid"
+  }) {
+    id
+    name
+  }
+}
+```
+
+## Complete CRUD Example
+
+```graphql
+# Create
+mutation {
+  createFilm(input: {
+    title: "A New Hope"
+    episodeId: 4
+    openingCrawl: "It is a period of civil war..."
+    director: "George Lucas"
+    producer: "Gary Kurtz"
+    releaseDate: "1977-05-25"
+  }) {
+    id
+    title
+  }
+}
+
+# Read with Filtering
+query {
+  films {
+    items(where: {title: {contains: "Hope"}}) {
+      id
+      title
+      episodeId
+    }
+  }
+}
+
+# Update
+mutation {
+  updateFilm(id: "1", input: {
+    title: "Star Wars: Episode IV - A New Hope"
+  }) {
+    id
+    title
+  }
+}
+
+# Delete
+mutation {
+  deleteFilm(id: "1")
+}
 ```
 
 ##  Key Features
