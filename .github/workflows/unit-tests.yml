@@ -30,102 +30,132 @@ jobs:
         run: dotnet build tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug
 
       - name: Run Tests
-        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=../../test-results.trx" --logger "console;verbosity=detailed" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=..\..\coverage.cobertura.xml
-
-      - name: Install Report Generator
-        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=detailed"
 
       - name: Find Coverage Files
         shell: pwsh
         run: |
-          Write-Host "Looking for coverage files..."
-          Get-ChildItem -Path . -Filter "*.cobertura.xml" -Recurse | ForEach-Object { Write-Host $_.FullName }
+          Write-Host "Searching for test result files..."
+          Get-ChildItem -Path . -Filter "test-results.trx" -Recurse | ForEach-Object { Write-Host "Found TRX: $($_.FullName)" }
 
-      - name: Generate Coverage Report
-        shell: pwsh
-        run: |
-          $coverageFile = Get-ChildItem -Path . -Filter "*.cobertura.xml" -Recurse | Select-Object -First 1
-          if ($null -ne $coverageFile) {
-            Write-Host "Found coverage file: $($coverageFile.FullName)"
-            reportgenerator -reports:"$($coverageFile.FullName)" -targetdir:"coverage-report" -reporttypes:"HtmlInline;Markdown"
-          } else {
-            Write-Host "No coverage files found, creating dummy report"
-            New-Item -ItemType Directory -Path "coverage-report" -Force | Out-Null
-            "# Coverage Report`n`nNo coverage data available." | Out-File -FilePath "coverage-report/Summary.md" -Encoding UTF8
-          }
+      - name: Install Report Generator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
       - name: Generate Test Report
         if: always()
         shell: pwsh
         run: |
           $trxFile = Get-ChildItem -Path . -Filter "test-results.trx" -Recurse | Select-Object -First 1
-          Write-Host "Looking for TRX file..."
           
           if ($null -ne $trxFile) {
             Write-Host "TRX File found: $($trxFile.FullName)"
             [xml]$trx = Get-Content $trxFile.FullName
+            
+            # Extract summary
             $passed = [int]$trx.TestRun.ResultSummary.Counters.passed
             $failed = [int]$trx.TestRun.ResultSummary.Counters.failed
             $total = [int]$trx.TestRun.ResultSummary.Counters.total
             $duration = $trx.TestRun.Times.duration
+            $runDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC'
             
             Write-Host "Tests - Total: $total, Passed: $passed, Failed: $failed"
             
             New-Item -ItemType Directory -Path "docs" -Force | Out-Null
             
-            $status = if ($failed -eq 0) { "✅ **All tests passing**" } else { "❌ **Tests failed**" }
-            $runDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC'
-            $repoUrl = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            
-            $report = "# Unit Test Report`n"
-            $report += "`n"
+            # Build comprehensive report
+            $report = "# Unit Test Report`n`n"
             $report += "**Run Date**: $runDate`n"
             $report += "**Branch**: ${{ github.ref_name }}`n"
-            $report += "**Commit**: ${{ github.sha }}`n"
-            $report += "`n"
-            $report += "## Summary`n"
-            $report += "`n"
+            $report += "**Commit**: ${{ github.sha }}`n`n"
+            
+            # Summary section
+            $report += "## Summary`n`n"
             $report += "| Metric | Value |`n"
             $report += "|--------|-------|`n"
             $report += "| Total Tests | $total |`n"
-            $report += "| ✅ Passed | $passed |`n"
-            $report += "| ❌ Failed | $failed |`n"
-            $report += "| ⏱️ Duration | $duration |`n"
-            $report += "`n"
-            $report += "## Status`n"
-            $report += "`n"
-            $report += "$status`n"
-            $report += "`n"
-            $report += "## Test Categories`n"
-            $report += "`n"
-            $report += "- Lexer Tests - GraphQL tokenization and parsing`n"
-            $report += "- Filtering Tests - Query filtering, sorting, pagination`n"
-            $report += "- Storage Tests - Data persistence and indexing`n"
-            $report += "- Index Tests - BTree and Hash index operations`n"
-            $report += "- Mutation Tests - GraphQL mutation handling`n"
-            $report += "- Parsing Tests - GraphQL schema and query parsing`n"
-            $report += "`n"
+            $report += "| Passed | $passed |`n"
+            $report += "| Failed | $failed |`n"
+            $report += "| Duration | $duration |`n"
+            $report += "| Pass Rate | $(if ($total -gt 0) { ([math]::Round(($passed/$total)*100, 2)) } else { 0 })% |`n`n"
             
-            # Check if coverage report exists
-            $coverageMd = Get-ChildItem -Path "coverage-report" -Filter "Summary.md" -Recurse | Select-Object -First 1
-            if ($null -ne $coverageMd) {
-              $report += "## Code Coverage`n"
-              $report += "`n"
-              $report += "[View Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)`n"
-              $report += "`n"
+            # Status
+            $status = if ($failed -eq 0) { "**Status**: ✅ All tests passing" } else { "**Status**: ❌ Tests failed" }
+            $report += "$status`n`n"
+            
+            # Parse all tests by category
+            $categories = @{}
+            if ($null -ne $trx.TestRun.Results) {
+              $trx.TestRun.Results.UnitTestResult | ForEach-Object {
+                $testName = $_.testName
+                $outcome = $_.outcome
+                $duration = $_.duration
+                
+                # Extract category from test name
+                $parts = $testName -split '\.'
+                if ($parts.Count -gt 2) {
+                  $category = $parts[-2]
+                } else {
+                  $category = "Other"
+                }
+                
+                if (-not $categories.ContainsKey($category)) {
+                  $categories[$category] = @{ Passed = 0; Failed = 0; Tests = @() }
+                }
+                
+                if ($outcome -eq "Passed") {
+                  $categories[$category].Passed++
+                } else {
+                  $categories[$category].Failed++
+                }
+                
+                $categories[$category].Tests += @{
+                  Name = $testName
+                  Outcome = $outcome
+                  Duration = $duration
+                }
+              }
             }
             
-            $report += "---`n"
-            $report += "`n"
-            $report += "[View Full Test Results]($repoUrl)`n"
+            # Write test results by category
+            if ($categories.Count -gt 0) {
+              $report += "## Test Results by Category`n`n"
+              
+              foreach ($cat in ($categories.Keys | Sort-Object)) {
+                $data = $categories[$cat]
+                $total_cat = $data.Passed + $data.Failed
+                $report += "### $cat`n`n"
+                $report += "**Status**: $($data.Passed)/$total_cat passed`n`n"
+                
+                # List failed tests first
+                $failedTests = $data.Tests | Where-Object { $_.Outcome -ne "Passed" }
+                if ($failedTests.Count -gt 0) {
+                  $report += "#### Failed Tests`n`n"
+                  $failedTests | ForEach-Object {
+                    $report += "- ❌ $($_.Name)`n"
+                    $report += "  - Duration: $($_.Duration)`n"
+                  }
+                  $report += "`n"
+                }
+                
+                # Summary for passed tests
+                $passedCount = ($data.Tests | Where-Object { $_.Outcome -eq "Passed" }).Count
+                if ($passedCount -gt 0) {
+                  $report += "- ✅ $passedCount tests passed`n"
+                }
+                $report += "`n"
+              }
+            }
+            
+            # Footer
+            $report += "---`n`n"
+            $report += "[View Full Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`n"
             
             $report | Out-File -FilePath "docs/unit-test-report.md" -Encoding UTF8 -Force
             
             Write-Host "Report saved to docs/unit-test-report.md"
-            Write-Host "File exists: $(Test-Path 'docs/unit-test-report.md')"
+            Write-Host "File size: $((Get-Item 'docs/unit-test-report.md').Length) bytes"
           } else {
             Write-Host "ERROR: TRX file not found!"
-            Get-ChildItem -Path . -Recurse -Filter "*.trx" | ForEach-Object { Write-Host $_.FullName }
           }
 
       - name: Commit Test Report
@@ -143,14 +173,6 @@ jobs:
         with:
           name: test-results
           path: '**/test-results.trx'
-          retention-days: 30
-
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: coverage-report/
           retention-days: 30
 
       - name: Upload Test Report
