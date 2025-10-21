@@ -30,61 +30,69 @@ jobs:
         run: dotnet build tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug
 
       - name: Run Tests
-        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=detailed"
+        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=../../test-results.trx" --logger "console;verbosity=detailed"
 
       - name: Generate Test Report
         if: always()
         shell: pwsh
         run: |
           $trxFile = Get-ChildItem -Path . -Filter "test-results.trx" -Recurse | Select-Object -First 1
+          Write-Host "Looking for TRX file..."
+          
           if ($null -ne $trxFile) {
+            Write-Host "TRX File found: $($trxFile.FullName)"
             [xml]$trx = Get-Content $trxFile.FullName
-            $passed = $trx.TestRun.ResultSummary.Counters.passed
-            $failed = $trx.TestRun.ResultSummary.Counters.failed
-            $total = $trx.TestRun.ResultSummary.Counters.total
+            $passed = [int]$trx.TestRun.ResultSummary.Counters.passed
+            $failed = [int]$trx.TestRun.ResultSummary.Counters.failed
+            $total = [int]$trx.TestRun.ResultSummary.Counters.total
             $duration = $trx.TestRun.Times.duration
             
-            $report = @"
-          # Unit Test Report
-          
-          **Run Date**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
-          **Branch**: `${{ github.ref_name }}`
-          **Commit**: `${{ github.sha }}`
-          
-          ## Summary
-          
-          | Metric | Count |
-          |--------|-------|
-          | Total Tests | $total |
-          | ✅ Passed | $passed |
-          | ❌ Failed | $failed |
-          | Duration | $duration |
-          
-          ## Test Categories
-          
-          - Lexer Tests
-          - Filtering Tests
-          - Storage Tests
-          - Index Tests (BTree, Hash)
-          - Mutation Tests
-          - Parsing Tests
-          
-          ## Status
-          
-          $( if ($failed -eq 0) { "✅ **All tests passing**" } else { "❌ **Tests failed**" } )
-          
-          ---
-          
-          [View Full Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          "@
+            Write-Host "Tests - Total: $total, Passed: $passed, Failed: $failed"
             
-            # Save to docs folder
             New-Item -ItemType Directory -Path "docs" -Force | Out-Null
-            $report | Out-File -FilePath "docs/unit-test-report.md" -Encoding UTF8
-            Write-Host $report
             
-            # Add to GitHub summary
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## 🧪 Unit Tests`n`n✅ **$passed** / $total tests passed"
+            $reportLines = @(
+              "# Unit Test Report",
+              "",
+              "**Run Date**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')",
+              "**Branch**: ${{ github.ref_name }}",
+              "**Commit**: ${{ github.sha }}",
+              "",
+              "## Summary",
+              "",
+              "| Metric | Count |",
+              "|--------|-------|",
+              "| Total Tests | $total |",
+              "| ✅ Passed | $passed |",
+              "| ❌ Failed | $failed |",
+              "| Duration | $duration |",
+              "",
+              "## Test Categories",
+              "",
+              "- Lexer Tests",
+              "- Filtering Tests",
+              "- Storage Tests",
+              "- Index Tests (BTree, Hash)",
+              "- Mutation Tests",
+              "- Parsing Tests",
+              "",
+              "## Status",
+              "",
+              if ($failed -eq 0) { "✅ **All tests passing**" } else { "❌ **Tests failed**" },
+              "",
+              "---",
+              "",
+              "[View Full Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            )
+            
+            $report = $reportLines -join "`n"
+            $report | Out-File -FilePath "docs/unit-test-report.md" -Encoding UTF8 -Force
+            
+            Write-Host "Report saved to docs/unit-test-report.md"
+            Write-Host "File exists: $(Test-Path 'docs/unit-test-report.md')"
+          } else {
+            Write-Host "ERROR: TRX file not found!"
+            Get-ChildItem -Path . -Recurse -Filter "*.trx" | ForEach-Object { Write-Host $_.FullName }
           }
 
       - name: Commit Test Report
