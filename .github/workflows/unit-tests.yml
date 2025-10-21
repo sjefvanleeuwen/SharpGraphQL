@@ -30,7 +30,14 @@ jobs:
         run: dotnet build tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug
 
       - name: Run Tests
-        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=../../test-results.trx" --logger "console;verbosity=detailed"
+        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=../../test-results.trx" --collect:"XPlat Code Coverage" --logger "console;verbosity=detailed"
+
+      - name: Install Report Generator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate Coverage Report
+        run: |
+          reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"HtmlInline;Markdown"
 
       - name: Generate Test Report
         if: always()
@@ -63,26 +70,36 @@ jobs:
             $report += "`n"
             $report += "## Summary`n"
             $report += "`n"
-            $report += "| Metric | Count |`n"
+            $report += "| Metric | Value |`n"
             $report += "|--------|-------|`n"
             $report += "| Total Tests | $total |`n"
             $report += "| ✅ Passed | $passed |`n"
             $report += "| ❌ Failed | $failed |`n"
-            $report += "| Duration | $duration |`n"
-            $report += "`n"
-            $report += "## Test Categories`n"
-            $report += "`n"
-            $report += "- Lexer Tests`n"
-            $report += "- Filtering Tests`n"
-            $report += "- Storage Tests`n"
-            $report += "- Index Tests (BTree, Hash)`n"
-            $report += "- Mutation Tests`n"
-            $report += "- Parsing Tests`n"
+            $report += "| ⏱️ Duration | $duration |`n"
             $report += "`n"
             $report += "## Status`n"
             $report += "`n"
             $report += "$status`n"
             $report += "`n"
+            $report += "## Test Categories`n"
+            $report += "`n"
+            $report += "- Lexer Tests - GraphQL tokenization and parsing`n"
+            $report += "- Filtering Tests - Query filtering, sorting, pagination`n"
+            $report += "- Storage Tests - Data persistence and indexing`n"
+            $report += "- Index Tests - BTree and Hash index operations`n"
+            $report += "- Mutation Tests - GraphQL mutation handling`n"
+            $report += "- Parsing Tests - GraphQL schema and query parsing`n"
+            $report += "`n"
+            
+            # Check if coverage report exists
+            $coverageMd = Get-ChildItem -Path "coverage-report" -Filter "Summary.md" -Recurse | Select-Object -First 1
+            if ($null -ne $coverageMd) {
+              $report += "## Code Coverage`n"
+              $report += "`n"
+              $report += "[View Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)`n"
+              $report += "`n"
+            }
+            
             $report += "---`n"
             $report += "`n"
             $report += "[View Full Test Results]($repoUrl)`n"
@@ -111,6 +128,14 @@ jobs:
         with:
           name: test-results
           path: '**/test-results.trx'
+          retention-days: 30
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage-report/
           retention-days: 30
 
       - name: Upload Test Report
