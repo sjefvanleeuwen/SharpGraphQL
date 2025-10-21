@@ -48,8 +48,8 @@ jobs:
           # Unit Test Report
           
           **Run Date**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
-          **Branch**: ${{ github.ref_name }}
-          **Commit**: ${{ github.sha }}
+          **Branch**: `${{ github.ref_name }}`
+          **Commit**: `${{ github.sha }}`
           
           ## Summary
           
@@ -75,11 +75,14 @@ jobs:
           
           ---
           
-          [View Full Test Results](../actions/runs/${{ github.run_id }})
+          [View Full Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           "@
             
             $report | Out-File -FilePath "test-report.md" -Encoding UTF8
             Write-Host $report
+            
+            # Add to GitHub summary
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## 🧪 Unit Tests`n`n✅ **$passed** / $total tests passed"
           }
 
       - name: Upload Test Results
