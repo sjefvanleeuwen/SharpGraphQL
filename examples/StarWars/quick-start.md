@@ -1,6 +1,8 @@
-# 🚀 SharpGraph Quick Start Guide
+# 🚀 SharpGraph Quick Start - Star Wars Example
 
-Get started with SharpGraph in 5 minutes: seed the Star Wars database and start querying!
+Get started with SharpGraph in 5 minutes using the Star Wars database: seed data and start querying!
+
+All examples in this guide use the **Star Wars GraphQL Database** with 30+ characters, 8 films, planets, species, starships, and vehicles.
 
 ## Prerequisites
 
@@ -36,7 +38,18 @@ dotnet build
 
 ## Step 3: Start the GraphQL Server
 
-The SharpGraph server runs on `http://localhost:8080` and automatically loads the Star Wars schema with seed data.
+The SharpGraph server automatically loads the Star Wars schema and seeds the database with 30+ characters, 8 films, planets, species, starships, and vehicles.
+
+### How Seeding Works
+
+When you start the server:
+1. **Schema Load** - Reads `graphql_db/schema.graphql`
+2. **Type Generation** - Generates connection types, filter types, CRUD mutations
+3. **Seed Data** - Populates tables from `examples/StarWars/seed_data.json`
+4. **Index Creation** - Creates indexes for fast lookups
+5. **Server Ready** - Listens on `http://localhost:8080`
+
+All seed data is stored in binary format in the `graphql_db/` folder and persists between restarts.
 
 ### Option A: Using PowerShell script (easiest)
 
@@ -46,6 +59,10 @@ The SharpGraph server runs on `http://localhost:8080` and automatically loads th
 
 # You should see:
 # 🚀 SharpGraph Server starting...
+# ✅ Schema loaded from graphql_db/schema.graphql
+# ✅ Seeding database with Star Wars data...
+# ✅ Character table: 30+ characters loaded
+# ✅ Film table: 8 films loaded
 # ✅ Server is ready at http://127.0.0.1:8080
 # 📊 Introspection available at http://127.0.0.1:8080/__schema
 ```
@@ -61,12 +78,14 @@ dotnet watch run --project src/SharpGraph.Server/SharpGraph.Server.csproj
 ```
 
 The server will:
-✅ Load `graphql_db/schema.graphql`  
+✅ Load `graphql_db/schema.graphql` with Star Wars types  
+✅ Seed database with 30+ characters from `seed_data.json`  
 ✅ Generate connection types (CharacterConnection, FilmConnection, etc.)  
-✅ Auto-generate CRUD mutations  
+✅ Auto-generate CRUD mutations (create, update, delete)  
+✅ Create indexes for fast lookups
 ✅ Make schema available for introspection  
 
-**Keep this terminal open** - your server is now running!
+**Keep this terminal open** - your server is now running with Star Wars data ready to query!
 
 ## Step 4: Test with Your First Query
 
@@ -403,14 +422,14 @@ $query = @'
 ## Next Steps
 
 ### 📖 Learn More
-- **[filtering-guide.md](filtering-guide.md)** - Complete filtering and sorting reference
-- **[README.md](../README.md)** - Architecture and features overview
-- **[examples/StarWars/README.md](../examples/StarWars/README.md)** - Star Wars schema details
+- **[filtering-guide.md](filtering-guide.md)** - Complete filtering and sorting reference with Star Wars queries
+- **[README.md](../../README.md)** - Architecture and features overview
+- **[README.md](README.md)** - Star Wars schema details
 
 ### 🔧 Advanced Topics
-- [SCHEMA_DRIVEN_FEATURE.md](../SCHEMA_DRIVEN_FEATURE.md) - Schema-driven development
-- [INDEXING-TESTS-SUMMARY.md](../INDEXING-TESTS-SUMMARY.md) - Indexing strategy
-- [OPTIMIZATIONS.md](../OPTIMIZATIONS.md) - Performance tips
+- [SCHEMA_DRIVEN_FEATURE.md](../../SCHEMA_DRIVEN_FEATURE.md) - Schema-driven development
+- [INDEXING-TESTS-SUMMARY.md](../../INDEXING-TESTS-SUMMARY.md) - Indexing strategy
+- [OPTIMIZATIONS.md](../../OPTIMIZATIONS.md) - Performance tips
 
 ### 💡 Try Building Your Own Schema
 
@@ -444,8 +463,8 @@ input UserInput {
 
 ## Getting Help
 
-- 📝 Check the [documentation](../README.md)
-- 🐛 Review [troubleshooting guide](troubleshooting.md)
+- 📝 Check the [documentation](../../README.md)
+- 🐛 Review [troubleshooting guide](../../docs/troubleshooting.md)
 - 💬 Check GitHub issues or create a new one
 
 ## Performance Tips

@@ -24,9 +24,9 @@ A high-performance, embedded, GraphQL-native database engine written in C# for .
 
 ### Documentation
 
-- [**⚡ Quick Start**](docs/quick-start.md) - Get up and running in 5 minutes with Star Wars example
+- [**⚡ Quick Start**](examples/StarWars/quick-start.md) - Get up and running in 5 minutes with Star Wars example
 - [Getting Started Guide](docs/getting-started.md) - Installation and quick start tutorials
-- [**Filtering & Sorting Guide**](docs/filtering-guide.md) - Prisma-style filtering, sorting, pagination with examples
+- [**Filtering & Sorting Guide**](examples/StarWars/filtering-guide.md) - Prisma-style filtering, sorting, pagination with Star Wars examples
 - [Features](docs/features.md) - Schema-driven development, GraphQL support, storage engine
 - [Configuration](docs/configuration.md) - Database configuration and settings
 - [API Reference](docs/api-reference.md) - Complete API documentation

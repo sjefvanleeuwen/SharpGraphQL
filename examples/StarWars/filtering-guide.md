@@ -1,6 +1,8 @@
-# SharpGraph Filtering & Sorting Guide
+# 🎬 SharpGraph Filtering & Sorting Guide - Star Wars Examples
 
 Complete guide to Prisma-style filtering, sorting, and pagination in SharpGraph.
+
+**All examples use the Star Wars GraphQL Database** with 6 entity types: Character, Film, Planet, Species, Starship, and Vehicle.
 
 ## Table of Contents
 
