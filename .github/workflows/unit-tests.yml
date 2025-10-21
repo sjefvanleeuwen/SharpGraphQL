@@ -30,7 +30,7 @@ jobs:
         run: dotnet build tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug
 
       - name: Run Tests
-        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=../../test-results.trx" --collect:"XPlat Code Coverage" --logger "console;verbosity=detailed"
+        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=../../test-results.trx" --logger "console;verbosity=detailed" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=..\..\coverage.cobertura.xml
 
       - name: Install Report Generator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
