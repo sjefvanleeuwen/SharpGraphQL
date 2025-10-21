@@ -971,7 +971,7 @@ public class GraphQLExecutor
     
     private List<Dictionary<string, object?>> BuildConnectionItemsArgs(string typeName)
     {
-        // Same arguments as Query fields, but on the Connection.items field instead
+        // Prisma-style arguments: where filter and orderBy sorting (entity-specific)
         return new List<Dictionary<string, object?>>
         {
             // where argument
@@ -987,7 +987,7 @@ public class GraphQLExecutor
                 },
                 ["defaultValue"] = null
             },
-            // orderBy argument
+            // orderBy argument - use entity-specific OrderBy type (Prisma-style)
             new()
             {
                 ["name"] = "orderBy",
@@ -1003,7 +1003,7 @@ public class GraphQLExecutor
                         ["ofType"] = new Dictionary<string, object?>
                         {
                             ["kind"] = "INPUT_OBJECT",
-                            ["name"] = "OrderByInput",
+                            ["name"] = $"{typeName}OrderBy",  // Entity-specific OrderBy
                             ["ofType"] = null
                         }
                     }
@@ -1322,6 +1322,15 @@ public class GraphQLExecutor
             }
         }
         
+        // Dynamically generate OrderBy types for each table type in schema (Prisma-style)
+        foreach (var (tableName, typeDef) in _schema)
+        {
+            if (!IsScalarType(tableName) && !_enumTypes.ContainsKey(tableName) && tableName != "Query" && tableName != "Mutation")
+            {
+                types.Add(BuildOrderByInputType(tableName, typeDef, field));
+            }
+        }
+        
         // Dynamically generate Connection types for each table type in schema
         foreach (var (tableName, typeDef) in _schema)
         {
@@ -1457,6 +1466,48 @@ public class GraphQLExecutor
             ["kind"] = "INPUT_OBJECT",
             ["name"] = $"{typeName}WhereInput",
             ["description"] = $"Filter input for {typeName}",
+            ["fields"] = null,
+            ["inputFields"] = inputFields,
+            ["interfaces"] = null,
+            ["enumValues"] = null,
+            ["possibleTypes"] = null
+        };
+    }
+    
+    private Dictionary<string, object?> BuildOrderByInputType(string typeName, TypeDefinition typeDef, Field field)
+    {
+        // Prisma-style OrderBy: each field can be sorted independently
+        var inputFields = new List<Dictionary<string, object?>>();
+        
+        // Add a field for each entity field that can be sorted
+        foreach (var fieldDef in typeDef.Fields)
+        {
+            // Only add sortable fields (scalars, not relationships)
+            var baseName = GetBaseTypeName(fieldDef.Type);
+            if (baseName != "List" && !baseName.Contains("Character") && !baseName.Contains("Film") && 
+                !baseName.Contains("Planet") && !baseName.Contains("Species") && !baseName.Contains("Starship") && 
+                !baseName.Contains("Vehicle"))
+            {
+                inputFields.Add(new Dictionary<string, object?>
+                {
+                    ["name"] = fieldDef.Name,
+                    ["description"] = null,
+                    ["type"] = new Dictionary<string, object?>
+                    {
+                        ["kind"] = "ENUM",
+                        ["name"] = "SortOrder",
+                        ["ofType"] = null
+                    },
+                    ["defaultValue"] = null
+                });
+            }
+        }
+        
+        return new Dictionary<string, object?>
+        {
+            ["kind"] = "INPUT_OBJECT",
+            ["name"] = $"{typeName}OrderBy",
+            ["description"] = $"Sort order input for {typeName} (Prisma-style)",
             ["fields"] = null,
             ["inputFields"] = inputFields,
             ["interfaces"] = null,
@@ -1750,6 +1801,16 @@ public class GraphQLExecutor
             if (_schema.TryGetValue(baseTypeName, out var baseTypeDef))
             {
                 return BuildWhereInputType(baseTypeName, baseTypeDef, field);
+            }
+        }
+        
+        // Handle OrderBy types (dynamically generated, Prisma-style)
+        if (typeName.EndsWith("OrderBy"))
+        {
+            var baseTypeName = typeName.Substring(0, typeName.Length - 7); // Remove "OrderBy"
+            if (_schema.TryGetValue(baseTypeName, out var baseTypeDef))
+            {
+                return BuildOrderByInputType(baseTypeName, baseTypeDef, field);
             }
         }
         
