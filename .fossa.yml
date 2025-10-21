@@ -1,0 +1,39 @@
+# FOSSA Configuration for SharpGraph Project
+
+version: 3
+
+cli:
+  allow-unresolved: false
+  suppress-errors: false
+
+project:
+  name: SharpGraph
+  description: "GraphQL filtering and query optimization library for .NET"
+
+exclude:
+  directories:
+    - bin
+    - obj
+    - node_modules
+    - .vs
+    - .vscode
+    - .git
+    - build
+    - dist
+  extensions:
+    - .git
+    - .gitignore
+    - .gitattributes
+
+# Analyze dependencies from all project files
+analyze:
+  # .NET projects
+  - type: dotnet
+    paths:
+      - ./src/SharpGraph.Core/SharpGraph.Core.csproj
+      - ./src/SharpGraph.Server/SharpGraph.Server.csproj
+      - ./src/SharpGraph.Ide/SharpGraph.Ide.csproj
+      - ./src/SharpGraph.Benchmark/SharpGraph.Benchmark.csproj
+      - ./tests/SharpGraph.Tests/SharpGraph.Tests.csproj
+      - ./examples/SharpGraph.Example/SharpGraph.Example.csproj
+      - ./examples/StarWars/StarWars.csproj

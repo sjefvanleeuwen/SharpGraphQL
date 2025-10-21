@@ -1,0 +1,98 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=detailed"
+
+      - name: Generate Test Report
+        if: always()
+        run: |
+          $trxFile = Get-ChildItem -Path . -Filter "test-results.trx" -Recurse | Select-Object -First 1
+          if ($null -ne $trxFile) {
+            [xml]$trx = Get-Content $trxFile.FullName
+            $passed = $trx.TestRun.ResultSummary.Counters.passed
+            $failed = $trx.TestRun.ResultSummary.Counters.failed
+            $total = $trx.TestRun.ResultSummary.Counters.total
+            $duration = $trx.TestRun.Times.duration
+            
+            $report = @"
+          # Unit Test Report
+          
+          **Run Date**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
+          **Branch**: ${{ github.ref_name }}
+          **Commit**: ${{ github.sha }}
+          
+          ## Summary
+          
+          | Metric | Count |
+          |--------|-------|
+          | Total Tests | $total |
+          | ✅ Passed | $passed |
+          | ❌ Failed | $failed |
+          | Duration | $duration |
+          
+          ## Test Categories
+          
+          - Lexer Tests
+          - Filtering Tests
+          - Storage Tests
+          - Index Tests (BTree, Hash)
+          - Mutation Tests
+          - Parsing Tests
+          
+          ## Status
+          
+          $( if ($failed -eq 0) { "✅ **All tests passing**" } else { "❌ **Tests failed**" } )
+          
+          ---
+          
+          [View Full Test Results](../actions/runs/${{ github.run_id }})
+          "@
+            
+            $report | Out-File -FilePath "test-report.md" -Encoding UTF8
+            Write-Host $report
+          }
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: '**/test-results.trx'
+          retention-days: 30
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report
+          path: test-report.md
+          retention-days: 30
