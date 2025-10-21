@@ -150,75 +150,97 @@ type Mutation {
   createPlanet(input: PlanetInput!): Planet
   updatePlanet(id: ID!, input: PlanetInput!): Planet
   deletePlanet(id: ID!): Boolean
+
+  createSpecies(input: SpeciesInput!): Species
+  updateSpecies(id: ID!, input: SpeciesInput!): Species
+  deleteSpecies(id: ID!): Boolean
+
+  createStarship(input: StarshipInput!): Starship
+  updateStarship(id: ID!, input: StarshipInput!): Starship
+  deleteStarship(id: ID!): Boolean
+
+  createVehicle(input: VehicleInput!): Vehicle
+  updateVehicle(id: ID!, input: VehicleInput!): Vehicle
+  deleteVehicle(id: ID!): Boolean
 }
 
-# Input types for mutations# Input types for mutations
+# Input types for mutations
 
-input CharacterInput {input CharacterInput {
+input CharacterInput {
+  name: String!
+  characterType: String!
+  appearsIn: [String]
+  height: Float
+  mass: Float
+  hairColor: String
+  skinColor: String
+  eyeColor: String
+  birthYear: String
+  primaryFunction: String
+  homePlanetId: ID
+}
 
-  name: String!  name: String!
+input FilmInput {
+  title: String!
+  episodeId: Int!
+  openingCrawl: String!
+  director: String!
+  producer: String!
+  releaseDate: String!
+}
 
-  characterType: String!  characterType: String!
+input PlanetInput {
+  name: String!
+  diameter: String
+  rotationPeriod: String
+  orbitalPeriod: String
+  gravity: String
+  population: String
+  climate: String
+  terrain: String
+  surfaceWater: String
+}
 
-  appearsIn: [String]  appearsIn: [String]
+input SpeciesInput {
+  name: String!
+  classification: String
+  designation: String
+  averageHeight: String
+  skinColors: String
+  hairColors: String
+  eyeColors: String
+  averageLifespan: String
+  homeworld: String
+  language: String
+}
 
-  height: Float  height: Float
+input StarshipInput {
+  name: String!
+  model: String
+  starshipClass: String
+  manufacturer: String
+  costInCredits: String
+  length: String
+  crew: String
+  passengers: String
+  maxAtmospheringSpeed: String
+  hyperdriveRating: String
+  MGLT: String
+  cargoCapacity: String
+  consumables: String
+}
 
-  mass: Float  mass: Float
-
-  hairColor: String  hairColor: String
-
-  skinColor: String  skinColor: String
-
-  eyeColor: String  eyeColor: String
-
-  birthYear: String  birthYear: String
-
-  primaryFunction: String  primaryFunction: String
-
-  homePlanetId: ID  homePlanetId: ID
-
-}}
-
-
-
-input FilmInput {input FilmInput {
-
-  title: String!  title: String!
-
-  episodeId: Int!  episodeId: Int!
-
-  openingCrawl: String!  openingCrawl: String!
-
-  director: String!  director: String!
-
-  producer: String!  producer: String!
-
-  releaseDate: String!  releaseDate: String!
-
-}}
-
-
-
-input PlanetInput {input PlanetInput {
-
-  name: String!  name: String!
-
-  diameter: String  diameter: String
-
-  rotationPeriod: String  rotationPeriod: String
-
-  orbitalPeriod: String  orbitalPeriod: String
-
-  gravity: String  gravity: String
-
-  population: String  population: String
-
-  climate: String  climate: String
-
-  terrain: String  terrain: String
-
-  surfaceWater: String  surfaceWater: String
-
-}}
+input VehicleInput {
+  name: String!
+  model: String
+  vehicleClass: String
+  manufacturer: String
+  costInCredits: String
+  length: String
+  crew: String
+  passengers: String
+  maxAtmospheringSpeed: String
+  cargoCapacity: String
+  consumables: String
+}
 
