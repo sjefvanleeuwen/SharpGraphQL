@@ -51,41 +51,42 @@ jobs:
             
             New-Item -ItemType Directory -Path "docs" -Force | Out-Null
             
-            $reportLines = @(
-              "# Unit Test Report",
-              "",
-              "**Run Date**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')",
-              "**Branch**: ${{ github.ref_name }}",
-              "**Commit**: ${{ github.sha }}",
-              "",
-              "## Summary",
-              "",
-              "| Metric | Count |",
-              "|--------|-------|",
-              "| Total Tests | $total |",
-              "| ✅ Passed | $passed |",
-              "| ❌ Failed | $failed |",
-              "| Duration | $duration |",
-              "",
-              "## Test Categories",
-              "",
-              "- Lexer Tests",
-              "- Filtering Tests",
-              "- Storage Tests",
-              "- Index Tests (BTree, Hash)",
-              "- Mutation Tests",
-              "- Parsing Tests",
-              "",
-              "## Status",
-              "",
-              if ($failed -eq 0) { "✅ **All tests passing**" } else { "❌ **Tests failed**" },
-              "",
-              "---",
-              "",
-              "[View Full Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-            )
+            $status = if ($failed -eq 0) { "✅ **All tests passing**" } else { "❌ **Tests failed**" }
+            $runDate = Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC'
+            $repoUrl = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             
-            $report = $reportLines -join "`n"
+            $report = "# Unit Test Report`n"
+            $report += "`n"
+            $report += "**Run Date**: $runDate`n"
+            $report += "**Branch**: ${{ github.ref_name }}`n"
+            $report += "**Commit**: ${{ github.sha }}`n"
+            $report += "`n"
+            $report += "## Summary`n"
+            $report += "`n"
+            $report += "| Metric | Count |`n"
+            $report += "|--------|-------|`n"
+            $report += "| Total Tests | $total |`n"
+            $report += "| ✅ Passed | $passed |`n"
+            $report += "| ❌ Failed | $failed |`n"
+            $report += "| Duration | $duration |`n"
+            $report += "`n"
+            $report += "## Test Categories`n"
+            $report += "`n"
+            $report += "- Lexer Tests`n"
+            $report += "- Filtering Tests`n"
+            $report += "- Storage Tests`n"
+            $report += "- Index Tests (BTree, Hash)`n"
+            $report += "- Mutation Tests`n"
+            $report += "- Parsing Tests`n"
+            $report += "`n"
+            $report += "## Status`n"
+            $report += "`n"
+            $report += "$status`n"
+            $report += "`n"
+            $report += "---`n"
+            $report += "`n"
+            $report += "[View Full Test Results]($repoUrl)`n"
+            
             $report | Out-File -FilePath "docs/unit-test-report.md" -Encoding UTF8 -Force
             
             Write-Host "Report saved to docs/unit-test-report.md"
