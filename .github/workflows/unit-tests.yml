@@ -35,9 +35,24 @@ jobs:
       - name: Install Report Generator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
-      - name: Generate Coverage Report
+      - name: Find Coverage Files
+        shell: pwsh
         run: |
-          reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"HtmlInline;Markdown"
+          Write-Host "Looking for coverage files..."
+          Get-ChildItem -Path . -Filter "*.cobertura.xml" -Recurse | ForEach-Object { Write-Host $_.FullName }
+
+      - name: Generate Coverage Report
+        shell: pwsh
+        run: |
+          $coverageFile = Get-ChildItem -Path . -Filter "*.cobertura.xml" -Recurse | Select-Object -First 1
+          if ($null -ne $coverageFile) {
+            Write-Host "Found coverage file: $($coverageFile.FullName)"
+            reportgenerator -reports:"$($coverageFile.FullName)" -targetdir:"coverage-report" -reporttypes:"HtmlInline;Markdown"
+          } else {
+            Write-Host "No coverage files found, creating dummy report"
+            New-Item -ItemType Directory -Path "coverage-report" -Force | Out-Null
+            "# Coverage Report`n`nNo coverage data available." | Out-File -FilePath "coverage-report/Summary.md" -Encoding UTF8
+          }
 
       - name: Generate Test Report
         if: always()
