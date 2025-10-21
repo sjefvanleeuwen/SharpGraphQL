@@ -26,11 +26,11 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
+      - name: Build Test Project
+        run: dotnet build tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug
 
       - name: Run Tests
-        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=detailed"
+        run: dotnet test tests/SharpGraph.Tests/SharpGraph.Tests.csproj --configuration Debug --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=detailed"
 
       - name: Generate Test Report
         if: always()
