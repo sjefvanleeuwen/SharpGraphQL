@@ -3,7 +3,7 @@
 > ⚠️ **UNDER HEAVY CONSTRUCTION** ⚠️  
 > This project is currently undergoing major development and refactoring. Features, APIs, and documentation may change rapidly. Please check back regularly for updates.
 
-[![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/9.0) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Status: Prototype](https://img.shields.io/badge/Status-Prototype-orange.svg)]()
+[![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/9.0) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Status: Prototype](https://img.shields.io/badge/Status-Prototype-orange.svg)]() [![Vibe Coded](https://img.shields.io/badge/Vibe-Coded-purple.svg)]()
 
 A high-performance, embedded, GraphQL-native database engine written in C# for .NET 9+. Define your database schema in GraphQL SDL, load data from JSON files, and query with native GraphQL - all without writing any C# table definition code.
 
