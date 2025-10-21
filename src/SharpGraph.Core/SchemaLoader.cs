@@ -111,18 +111,19 @@ public class SchemaLoader
             // Add types to our list
             typeDefinitions.AddRange(allTypes);
             
-            // Add parsed input types
-            foreach (var inputType in inputTypes)
-            {
-                _executor.RegisterInputType(inputType);
-            }
-            
             Console.WriteLine($"  ✓ Total: {typeDefinitions.Count} regular types and {inputTypes.Count} input types for introspection");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"⚠️  Warning: Could not parse schema for introspection: {ex.Message}");
             // Continue without type definitions - introspection won't work but queries will
+        }
+        
+        // Register input types ALWAYS, regardless of parser errors
+        foreach (var inputType in inputTypes)
+        {
+            Console.WriteLine($"  📥 Registering input type: {inputType.Name} with {inputType.Fields.Count} fields");
+            _executor.RegisterInputType(inputType);
         }
         
         // Create tables for each type (excluding Query and Mutation which are operation types, not data tables)
@@ -142,7 +143,49 @@ public class SchemaLoader
                 continue;
             }
             
+            // If typeDef is null, create one from ParsedType for introspection
+            if (typeDef == null)
+            {
+                typeDef = new GraphQL.TypeDefinition
+                {
+                    Name = parsedType.Name,
+                    Fields = parsedType.Fields.Select(f => new GraphQL.FieldDefinition
+                    {
+                        Name = f.Name,
+                        Type = ParseTypeString(f.TypeName)
+                    }).ToList()
+                };
+            }
+            
             CreateTableFromType(parsedType, schemaContent, typeDef);
+        }
+        
+        // Generate Connection types for all entity types (derived from schema, not tables)
+        Console.WriteLine($"\n📦 Generating Connection types from schema...");
+        foreach (var parsedType in parsedTypes)
+        {
+            // Skip Query, Mutation, and scalar/enum types
+            if (parsedType.Name == "Query" || parsedType.Name == "Mutation")
+                continue;
+            
+            // Get typeDef from parsed definitions, or create a minimal one
+            var typeDef = typeDefinitions.FirstOrDefault(t => t.Name == parsedType.Name);
+            if (typeDef == null)
+            {
+                // Create minimal TypeDefinition from ParsedType
+                typeDef = new GraphQL.TypeDefinition
+                {
+                    Name = parsedType.Name,
+                    Fields = parsedType.Fields.Select(f => new GraphQL.FieldDefinition
+                    {
+                        Name = f.Name,
+                        Type = ParseTypeString(f.TypeName)
+                    }).ToList()
+                };
+            }
+            
+            _executor.GenerateAndRegisterConnectionType(parsedType.Name, typeDef);
+            Console.WriteLine($"  ✓ Generated {parsedType.Name}Connection");
         }
         
         // Save full schema to file for serving via /schema endpoint

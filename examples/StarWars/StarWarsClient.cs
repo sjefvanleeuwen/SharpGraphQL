@@ -76,9 +76,11 @@ try
     {
         query = @"{
             characters {
-                name
-                characterType
-                height
+                items {
+                    name
+                    characterType
+                    height
+                }
             }
         }"
     };
@@ -86,7 +88,7 @@ try
     var result1 = await httpClient.PostAsJsonAsync("/graphql", query1);
     var json1 = await result1.Content.ReadAsStringAsync();
     var doc1 = JsonDocument.Parse(json1);
-    var characters = doc1.RootElement.GetProperty("data").GetProperty("characters");
+    var characters = doc1.RootElement.GetProperty("data").GetProperty("characters").GetProperty("items");
     
     Console.WriteLine($"Found {characters.GetArrayLength()} characters:");
     foreach (var character in characters.EnumerateArray())
@@ -127,9 +129,11 @@ try
     {
         query = @"{
             planets {
-                name
-                climate
-                terrain
+                items {
+                    name
+                    climate
+                    terrain
+                }
             }
         }"
     };
@@ -137,7 +141,7 @@ try
     var result3 = await httpClient.PostAsJsonAsync("/graphql", query3);
     var json3 = await result3.Content.ReadAsStringAsync();
     var doc3 = JsonDocument.Parse(json3);
-    var planets = doc3.RootElement.GetProperty("data").GetProperty("planets");
+    var planets = doc3.RootElement.GetProperty("data").GetProperty("planets").GetProperty("items");
     
     Console.WriteLine($"Found {planets.GetArrayLength()} planets:");
     foreach (var planet in planets.EnumerateArray())
@@ -154,10 +158,12 @@ try
     {
         query = @"{
             films {
-                title
-                episodeId
-                director
-                releaseDate
+                items {
+                    title
+                    episodeId
+                    director
+                    releaseDate
+                }
             }
         }"
     };
@@ -165,7 +171,7 @@ try
     var result4 = await httpClient.PostAsJsonAsync("/graphql", query4);
     var json4 = await result4.Content.ReadAsStringAsync();
     var doc4 = JsonDocument.Parse(json4);
-    var films = doc4.RootElement.GetProperty("data").GetProperty("films");
+    var films = doc4.RootElement.GetProperty("data").GetProperty("films").GetProperty("items");
     
     Console.WriteLine($"Found {films.GetArrayLength()} films:");
     foreach (var film in films.EnumerateArray())

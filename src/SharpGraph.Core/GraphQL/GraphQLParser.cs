@@ -323,6 +323,7 @@ public class GraphQLParser
             TokenType.BracketOpen => ParseListValue(),
             TokenType.BraceOpen => ParseObjectValue(),
             TokenType.Dollar => ParseVariableValue(),
+            TokenType.Name => ParseEnumValue(),  // Handle enum values (bare identifiers)
             _ => throw new GraphQLSyntaxException($"Unexpected value type: {CurrentType}")
         };
     }
@@ -359,6 +360,14 @@ public class GraphQLParser
     {
         Advance();
         return JsonDocument.Parse("null").RootElement;
+    }
+    
+    private JsonElement ParseEnumValue()
+    {
+        // Enum values are bare identifiers, returned as strings
+        var value = CurrentValue;
+        Advance();
+        return JsonDocument.Parse($"\"{value}\"").RootElement;
     }
     
     private JsonElement ParseListValue()

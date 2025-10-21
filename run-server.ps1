@@ -37,37 +37,6 @@ if ($ready) {
     Write-Host ""
     Write-Host "Server is ready at http://127.0.0.1:8080/graphql" -ForegroundColor Green
     Write-Host ""
-    
-    # Run tests
-    Write-Host "Running API tests..." -ForegroundColor Cyan
-    Write-Host ""
-    
-    # Test 1: Create user
-    Write-Host "Test 1: Creating user Charlie..." -ForegroundColor Yellow
-    $createBody = '{"query":"mutation { createUser(input: { name: \"Charlie\", email: \"charlie@example.com\", age: 25 }) { id name email age } }"}'
-    try {
-        $result = Invoke-RestMethod -Uri 'http://127.0.0.1:8080/graphql' -Method POST -Body $createBody -ContentType 'application/json'
-        Write-Host "User created!" -ForegroundColor Green
-        $result | ConvertTo-Json -Depth 10
-    } catch {
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
-    
-    Start-Sleep -Seconds 1
-    
-    # Test 2: Query all users
-    Write-Host ""
-    Write-Host "Test 2: Querying all users..." -ForegroundColor Yellow
-    $queryBody = '{"query":"{ users { id name email age } }"}'
-    try {
-        $result = Invoke-RestMethod -Uri 'http://127.0.0.1:8080/graphql' -Method POST -Body $queryBody -ContentType 'application/json'
-        Write-Host "Query successful!" -ForegroundColor Green
-        $result | ConvertTo-Json -Depth 10
-    } catch {
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
-    
-    Write-Host ""
     Write-Host "================================================" -ForegroundColor Cyan
     Write-Host "Server is running!" -ForegroundColor Green
     Write-Host "Check SERVER_GUIDE.md for more examples" -ForegroundColor Yellow

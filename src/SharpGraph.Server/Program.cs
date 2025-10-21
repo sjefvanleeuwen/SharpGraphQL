@@ -29,58 +29,31 @@ class Program
         var executor = new GraphQLExecutor(dbPath);
         _schemaLoader = new SchemaLoader(dbPath, executor);
         
-        // Load or create User table with schema
-        var userSchema = @"
-type User {
-    id: ID!
-    name: String!
-    email: String!
-    age: Int
-}";
+        Console.WriteLine("✅ Schema loader initialized");
+        Console.WriteLine();
         
-        var userTablePath = Path.Combine(dbPath, "User.tbl");
-        Table userTable;
-        
-        if (File.Exists(userTablePath))
+        // Auto-load existing schema and data on startup
+        var schemaPath = Path.Combine(dbPath, "schema.graphql");
+        if (File.Exists(schemaPath))
         {
-            Console.WriteLine("📖 Opening existing User table...");
-            userTable = Table.Open("User", dbPath);
+            Console.WriteLine("📂 Loading existing schema from disk...");
+            try
+            {
+                _schemaLoader.LoadSchemaFromFile(schemaPath);
+                Console.WriteLine("✅ Schema loaded from disk");
+                Console.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Failed to load schema: {ex.Message}");
+                Console.WriteLine();
+            }
         }
         else
         {
-            Console.WriteLine("✨ Creating new User table...");
-            userTable = Table.Create("User", dbPath, userSchema);
+            Console.WriteLine("ℹ️  No existing schema found. Use POST /schema/load to load a schema.");
+            Console.WriteLine();
         }
-        
-        // Parse schema for introspection
-        var schemaParser = new GraphQLParser(userSchema);
-        var schemaDoc = schemaParser.Parse();
-        var userTypeDef = schemaDoc.Definitions.OfType<TypeDefinition>().FirstOrDefault();
-        
-        // Extract column definitions from schema for optimized storage
-        var columns = new List<ColumnDefinition>();
-        if (userTypeDef != null)
-        {
-            foreach (var field in userTypeDef.Fields)
-            {
-                var scalarType = MapGraphQLTypeToScalarType(field.Type);
-                columns.Add(new ColumnDefinition 
-                { 
-                    Name = field.Name, 
-                    ScalarType = scalarType,
-                    IsNullable = !IsNonNull(field.Type),
-                    IsList = IsList(field.Type)
-                });
-            }
-            
-            // Set schema with columns for optimized storage
-            userTable.SetSchema(userSchema, columns);
-        }
-        
-        executor.RegisterTable("User", userTable, userTypeDef);
-        
-        Console.WriteLine("✅ Schema registered");
-        Console.WriteLine();
         Console.WriteLine("Available endpoints:");
         Console.WriteLine("  POST   /graphql              - Execute GraphQL queries");
         Console.WriteLine("  GET    /graphql?query=       - Execute GraphQL queries (GET)");
@@ -90,10 +63,6 @@ type User {
         Console.WriteLine("  POST   /schema/data          - Load data into tables");
         Console.WriteLine("  GET    /schema               - Get current schema");
         Console.WriteLine("  GET    /schema/tables        - List all tables");
-        Console.WriteLine();
-        Console.WriteLine("Example queries:");
-        Console.WriteLine("  Query:    { users { id name email } }");
-        Console.WriteLine("  Mutation: mutation { createUser(input: { name: \"Alice\", email: \"alice@example.com\" }) { id name } }");
         Console.WriteLine();
         Console.WriteLine("Server ready! Press Ctrl+C to stop.");
         Console.WriteLine("════════════════════════════════════════════════════════");
@@ -119,7 +88,7 @@ type User {
                 var contextTask = listener.GetContextAsync();
                 var context = await contextTask.WaitAsync(cts.Token);
                 
-                _ = Task.Run(() => HandleRequest(context, executor, userSchema, _schemaLoader!), cts.Token);
+                _ = Task.Run(() => HandleRequest(context, executor, _schemaLoader!, dbPath), cts.Token);
             }
         }
         catch (OperationCanceledException)
@@ -129,12 +98,11 @@ type User {
         finally
         {
             listener.Stop();
-            userTable.Dispose();
             Console.WriteLine("✅ Server stopped cleanly");
         }
     }
     
-    static async Task HandleRequest(HttpListenerContext context, GraphQLExecutor executor, string schema, SchemaLoader schemaLoader)
+    static async Task HandleRequest(HttpListenerContext context, GraphQLExecutor executor, SchemaLoader schemaLoader, string dbPath)
     {
         var request = context.Request;
         var response = context.Response;
@@ -173,6 +141,8 @@ type User {
                     var queryString = request.Url?.Query;
                     if (queryString?.Contains("sdl") == true)
                     {
+                        var schemaPath = Path.Combine(dbPath, "schema.graphql");
+                        var schema = File.Exists(schemaPath) ? File.ReadAllText(schemaPath) : "No schema loaded";
                         await SendTextResponse(response, schema, "text/plain");
                         Console.WriteLine($"[{timestamp}]   → 200 OK (SDL schema)");
                         return;

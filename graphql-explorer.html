@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharpGraph GraphQL Explorer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+        #graphiql {
+            height: 100vh;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/graphiql@2.4.7/graphiql.min.css" />
+</head>
+<body>
+    <div id="graphiql">Loading...</div>
+    
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/graphiql@2.4.7/graphiql.min.js"></script>
+    
+    <script>
+        // Clear GraphiQL cache to force schema reload
+        const storageKey = 'graphiql:http://127.0.0.1:8080/graphql';
+        Object.keys(localStorage).forEach(key => {
+            if (key.includes('graphiql') || key.includes('127.0.0.1:8080')) {
+                localStorage.removeItem(key);
+                console.log('Cleared cache:', key);
+            }
+        });
+        
+        const fetcher = GraphiQL.createFetcher({
+            url: 'http://127.0.0.1:8080/graphql',
+        });
+        
+        const defaultQuery = `# Welcome to SharpGraph GraphQL Explorer!
+# Schema cache cleared - you should now see autocomplete!
+
+# 1. Find characters with "Skywalker" in name
+{
+  characters(where: { name: { contains: "Skywalker" } }) {
+    id
+    name
+    height
+    eyeColor
+  }
+}
+
+# 2. Find characters taller than 170cm
+# {
+#   characters(where: { height: { gt: 170 } }) {
+#     id
+#     name
+#     height
+#   }
+# }
+
+# 3. Complex filter with AND
+# {
+#   characters(
+#     where: {
+#       AND: [
+#         { characterType: { equals: "Human" } }
+#         { height: { gt: 170 } }
+#       ]
+#     }
+#   ) {
+#     id
+#     name
+#     height
+#     characterType
+#   }
+# }
+
+# Press Ctrl+Space to see autocomplete!
+`;
+
+        ReactDOM.render(
+            React.createElement(GraphiQL, {
+                fetcher: fetcher,
+                defaultQuery: defaultQuery,
+            }),
+            document.getElementById('graphiql')
+        );
+    </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Query Execution</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; border-radius: 3px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 GraphQL Filtering Test</h1>
+    
+    <div class="section">
+        <h3>Test 1: Execute Filter Query</h3>
+        <button onclick="testFilterQuery()">Run Query</button>
+        <div id="test1-result"></div>
+    </div>
+
+    <div class="section">
+        <h3>Test 2: Check Introspection - StringFilterMode</h3>
+        <button onclick="testStringFilterMode()">Check Type</button>
+        <div id="test2-result"></div>
+    </div>
+
+    <div class="section">
+        <h3>Test 3: Check Introspection - StringFilter</h3>
+        <button onclick="testStringFilter()">Check Type</button>
+        <div id="test3-result"></div>
+    </div>
+
+    <div class="section">
+        <h3>Test 4: Full Query Fields</h3>
+        <button onclick="testQueryFields()">Check Fields</button>
+        <div id="test4-result"></div>
+    </div>
+
+    <script>
+        async function makeGraphQLRequest(query) {
+            try {
+                const response = await fetch('http://127.0.0.1:8080/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        async function testFilterQuery() {
+            const query = `{
+                characters(where: { name: { contains: "Luke" } }) {
+                    id
+                    name
+                }
+            }`;
+            
+            const result = await makeGraphQLRequest(query);
+            const div = document.getElementById('test1-result');
+            
+            if (result.errors) {
+                div.innerHTML = `<p class="error">❌ Query Failed</p><pre>${JSON.stringify(result.errors, null, 2)}</pre>`;
+            } else if (result.data && result.data.characters) {
+                div.innerHTML = `<p class="success">✅ Query Successful!</p><pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+            } else {
+                div.innerHTML = `<p class="error">❌ Unexpected Result</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+            }
+        }
+
+        async function testStringFilterMode() {
+            const query = `{
+                __type(name: "StringFilterMode") {
+                    name
+                    kind
+                    enumValues { name }
+                }
+            }`;
+            
+            const result = await makeGraphQLRequest(query);
+            const div = document.getElementById('test2-result');
+            
+            if (result.data?.__type?.kind === 'ENUM') {
+                div.innerHTML = `<p class="success">✅ StringFilterMode is ENUM</p><pre>${JSON.stringify(result.data.__type, null, 2)}</pre>`;
+            } else {
+                div.innerHTML = `<p class="error">❌ StringFilterMode check failed</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+            }
+        }
+
+        async function testStringFilter() {
+            const query = `{
+                __type(name: "StringFilter") {
+                    name
+                    kind
+                    inputFields {
+                        name
+                        type {
+                            kind
+                            name
+                            ofType { kind name }
+                        }
+                    }
+                }
+            }`;
+            
+            const result = await makeGraphQLRequest(query);
+            const div = document.getElementById('test3-result');
+            
+            if (result.data?.__type?.inputFields) {
+                const modeField = result.data.__type.inputFields.find(f => f.name === 'mode');
+                if (modeField?.type?.kind === 'ENUM') {
+                    div.innerHTML = `<p class="success">✅ StringFilter.mode is ENUM</p><pre>${JSON.stringify(modeField, null, 2)}</pre>`;
+                } else {
+                    div.innerHTML = `<p class="error">❌ StringFilter.mode is not ENUM</p><pre>${JSON.stringify(modeField, null, 2)}</pre>`;
+                }
+            } else {
+                div.innerHTML = `<p class="error">❌ StringFilter check failed</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+            }
+        }
+
+        async function testQueryFields() {
+            const query = `{
+                __type(name: "Query") {
+                    fields {
+                        name
+                        args {
+                            name
+                            type {
+                                kind
+                                name
+                            }
+                        }
+                    }
+                }
+            }`;
+            
+            const result = await makeGraphQLRequest(query);
+            const div = document.getElementById('test4-result');
+            
+            if (result.data?.__type?.fields) {
+                const charField = result.data.__type.fields.find(f => f.name === 'characters');
+                if (charField?.args?.some(a => a.name === 'where')) {
+                    div.innerHTML = `<p class="success">✅ Query.characters has 'where' argument</p><pre>${JSON.stringify(charField.args, null, 2)}</pre>`;
+                } else {
+                    div.innerHTML = `<p class="error">❌ Query.characters missing 'where' argument</p><pre>${JSON.stringify(charField?.args, null, 2)}</pre>`;
+                }
+            } else {
+                div.innerHTML = `<p class="error">❌ Query fields check failed</p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

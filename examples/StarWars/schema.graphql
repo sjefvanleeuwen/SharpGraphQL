@@ -152,38 +152,73 @@ type Mutation {
   deletePlanet(id: ID!): Boolean
 }
 
-# Input types for mutations
-input CharacterInput {
-  name: String!
-  characterType: String!
-  appearsIn: [String]
-  height: Float
-  mass: Float
-  hairColor: String
-  skinColor: String
-  eyeColor: String
-  birthYear: String
-  primaryFunction: String
-  homePlanetId: ID
-}
+# Input types for mutations# Input types for mutations
 
-input FilmInput {
-  title: String!
-  episodeId: Int!
-  openingCrawl: String!
-  director: String!
-  producer: String!
-  releaseDate: String!
-}
+input CharacterInput {input CharacterInput {
 
-input PlanetInput {
-  name: String!
-  diameter: String
-  rotationPeriod: String
-  orbitalPeriod: String
-  gravity: String
-  population: String
-  climate: String
-  terrain: String
-  surfaceWater: String
-}
+  name: String!  name: String!
+
+  characterType: String!  characterType: String!
+
+  appearsIn: [String]  appearsIn: [String]
+
+  height: Float  height: Float
+
+  mass: Float  mass: Float
+
+  hairColor: String  hairColor: String
+
+  skinColor: String  skinColor: String
+
+  eyeColor: String  eyeColor: String
+
+  birthYear: String  birthYear: String
+
+  primaryFunction: String  primaryFunction: String
+
+  homePlanetId: ID  homePlanetId: ID
+
+}}
+
+
+
+input FilmInput {input FilmInput {
+
+  title: String!  title: String!
+
+  episodeId: Int!  episodeId: Int!
+
+  openingCrawl: String!  openingCrawl: String!
+
+  director: String!  director: String!
+
+  producer: String!  producer: String!
+
+  releaseDate: String!  releaseDate: String!
+
+}}
+
+
+
+input PlanetInput {input PlanetInput {
+
+  name: String!  name: String!
+
+  diameter: String  diameter: String
+
+  rotationPeriod: String  rotationPeriod: String
+
+  orbitalPeriod: String  orbitalPeriod: String
+
+  gravity: String  gravity: String
+
+  population: String  population: String
+
+  climate: String  climate: String
+
+  terrain: String  terrain: String
+
+  surfaceWater: String  surfaceWater: String
+
+}}
+
