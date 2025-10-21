@@ -78,12 +78,23 @@ jobs:
           [View Full Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           "@
             
-            $report | Out-File -FilePath "test-report.md" -Encoding UTF8
+            # Save to docs folder
+            New-Item -ItemType Directory -Path "docs" -Force | Out-Null
+            $report | Out-File -FilePath "docs/unit-test-report.md" -Encoding UTF8
             Write-Host $report
             
             # Add to GitHub summary
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## 🧪 Unit Tests`n`n✅ **$passed** / $total tests passed"
           }
+
+      - name: Commit Test Report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/unit-test-report.md
+          git commit -m "docs: update unit test report" || true
+          git push || true
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
@@ -98,5 +109,5 @@ jobs:
         if: always()
         with:
           name: test-report
-          path: test-report.md
+          path: docs/unit-test-report.md
           retention-days: 30
