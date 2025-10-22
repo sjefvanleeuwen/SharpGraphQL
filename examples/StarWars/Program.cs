@@ -1,17 +1,75 @@
-using SharpGraph.Examples;
+using SharpGraph.Examples;using SharpGraph.Examples;using SharpGraph.Examples;
+
+
 
 namespace SharpGraph.Examples;
 
-class Program
+
+
+class Programnamespace SharpGraph.Examples;namespace SharpGraph.Examples;
+
 {
+
     static void Main(string[] args)
+
     {
-        Console.WriteLine("╔════════════════════════════════════════╗");
-        Console.WriteLine("║   🌟 STAR WARS GRAPHQL DATABASE 🌟   ║");
-        Console.WriteLine("╚════════════════════════════════════════╝\n");
+
+        Console.WriteLine("╔════════════════════════════════════════╗");class Programclass Program
+
+        Console.WriteLine("║   🌟 STAR WARS DATA GENERATOR 🌟    ║");
+
+        Console.WriteLine("╚════════════════════════════════════════╝\n");{{
+
         
-        // Initialize Star Wars database
-        var db = new StarWarsDatabase("starwars_db");
+
+        // Generate Star Wars data    static void Main(string[] args)    static void Main(string[] args)
+
+        var generator = new StarWarsDataGenerator();
+
+            {    {
+
+        // Export to seed_data.json in the bin directory
+
+        var outputPath = Path.Combine(AppContext.BaseDirectory, "seed_data.json");        Console.WriteLine("╔════════════════════════════════════════╗");        Console.WriteLine("╔════════════════════════════════════════╗");
+
+        generator.ExportToJson(outputPath);
+
+                Console.WriteLine("║   🌟 STAR WARS DATA GENERATOR 🌟    ║");        Console.WriteLine("║   🌟 STAR WARS DATA GENERATOR 🌟    ║");
+
+        Console.WriteLine($"\n✨ Star Wars universe data generated successfully!");
+
+        Console.WriteLine($"📍 File location: {outputPath}");        Console.WriteLine("╚════════════════════════════════════════╝\n");        Console.WriteLine("╚════════════════════════════════════════╝\n");
+
+        Console.WriteLine($"\n💡 Use this file with the schema-driven example (ProgramSchemaDriven.cs)");
+
+    }                
+
+}
+
+        // Generate Star Wars data        // Generate Star Wars data
+
+        var generator = new StarWarsDataGenerator();        var generator = new StarWarsDataGenerator();
+
+                
+
+        // Export to seed_data.json in the bin directory        // Export to seed_data.json in the bin directory
+
+        var outputPath = Path.Combine(AppContext.BaseDirectory, "seed_data.json");        var outputPath = Path.Combine(AppContext.BaseDirectory, "seed_data.json");
+
+        generator.ExportToJson(outputPath);        generator.ExportToJson(outputPath);
+
+                
+
+        Console.WriteLine($"\n✨ Star Wars universe data generated successfully!");        Console.WriteLine($"\n✨ Star Wars universe data generated successfully!");
+
+        Console.WriteLine($"📍 File location: {outputPath}");        Console.WriteLine($"📍 File location: {outputPath}");
+
+        Console.WriteLine($"\n💡 Use this file with the schema-driven example (ProgramSchemaDriven.cs)");        Console.WriteLine($"\n💡 Use this file with the schema-driven example (ProgramSchemaDriven.cs)");
+
+    }    }
+
+}}
+
         
         Console.WriteLine("\n" + new string('=', 60));
         Console.WriteLine("EXAMPLE QUERIES");

@@ -609,10 +609,11 @@ public class GraphQLExecutor
         if (!_tables.TryGetValue(relationColumn.RelatedTable, out var relatedTable))
             return null;
         
-        // Get the foreign key value from the current record
+        // Get the foreign key field name
         var foreignKeyField = relationColumn.ForeignKey ?? $"{relationColumn.RelatedTable.ToLower()}Id";
-        if (!data.TryGetValue(foreignKeyField, out var foreignKeyValue))
-            return null;
+        
+        // Try to get the foreign key value from the current record (may not exist for reverse relationships)
+        data.TryGetValue(foreignKeyField, out var foreignKeyValue);
         
         // Handle different relation types
         if (relationColumn.RelationType == RelationType.OneToMany || relationColumn.IsList)
@@ -627,9 +628,12 @@ public class GraphQLExecutor
                 // Connection pattern: resolve the items with the nested field selections
                 var results = new List<Dictionary<string, object?>>();
                 
-                if (foreignKeyValue.ValueKind == JsonValueKind.Array)
+                // Check if we have a foreign key value in the current record
+                var hasForeignKey = foreignKeyValue.ValueKind != JsonValueKind.Undefined && foreignKeyValue.ValueKind != JsonValueKind.Null;
+                
+                if (hasForeignKey && foreignKeyValue.ValueKind == JsonValueKind.Array)
                 {
-                    // Many-to-many: foreign key is an array of IDs
+                    // Many-to-many: foreign key is an array of IDs in current record
                     var ids = new List<string>();
                     foreach (var idElement in foreignKeyValue.EnumerateArray())
                     {
@@ -656,7 +660,8 @@ public class GraphQLExecutor
                 }
                 else
                 {
-                    // One-to-many: scan related table for records that reference this record
+                    // One-to-many reverse lookup: scan related table for records that reference this record
+                    // This handles cases like Planet.residents where Characters have homePlanetId pointing to Planet
                     var currentId = data.TryGetValue("id", out var idElement) ? idElement.GetString() : null;
                     if (currentId != null)
                     {
@@ -666,7 +671,9 @@ public class GraphQLExecutor
                             var recordData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(value);
                             if (recordData != null && recordData.TryGetValue(foreignKeyField, out var recordFk))
                             {
-                                if (recordFk.GetString() == currentId)
+                                // Check if the foreign key matches current record's ID
+                                var fkValue = recordFk.ValueKind == JsonValueKind.String ? recordFk.GetString() : null;
+                                if (fkValue == currentId)
                                 {
                                     results.Add(ProjectFields(recordData, itemsField, fragments, relationColumn.RelatedTable));
                                 }
