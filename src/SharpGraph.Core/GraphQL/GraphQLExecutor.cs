@@ -15,6 +15,7 @@ public class GraphQLExecutor
     private readonly Dictionary<string, Dictionary<string, object?>> _generatedObjectTypes = new();  // For Connection types
     private readonly Dictionary<string, List<string>> _enumTypes = new();
     private readonly string _dbPath;
+    private readonly DynamicIndexOptimizer _indexOptimizer = new();
     
     public GraphQLExecutor(string dbPath)
     {
@@ -255,6 +256,9 @@ public class GraphQLExecutor
                 var whereValue = ResolveValue(whereArg.Value, variables);
                 if (whereValue is JsonElement whereElement)
                 {
+                    // Analyze and potentially create dynamic indexes
+                    _indexOptimizer.AnalyzeAndOptimize(tableName, whereElement, table);
+                    
                     records = FilterEvaluator.ApplyFilters(records, whereElement);
                 }
             }
@@ -1863,5 +1867,13 @@ public class GraphQLExecutor
         };
         var json = JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true });
         return JsonDocument.Parse(json);
+    }
+    
+    /// <summary>
+    /// Gets statistics about dynamically created indexes
+    /// </summary>
+    public Dictionary<string, object> GetDynamicIndexStatistics()
+    {
+        return _indexOptimizer.GetStatistics();
     }
 }
