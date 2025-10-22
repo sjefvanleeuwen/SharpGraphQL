@@ -109,7 +109,9 @@ try
                 height
                 eyeColor
                 friends {
-                    name
+                    items {
+                        name
+                    }
                 }
             }
         }"

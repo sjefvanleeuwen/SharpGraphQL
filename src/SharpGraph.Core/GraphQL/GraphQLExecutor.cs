@@ -617,61 +617,82 @@ public class GraphQLExecutor
         // Handle different relation types
         if (relationColumn.RelationType == RelationType.OneToMany || relationColumn.IsList)
         {
-            // Many-to-many or one-to-many: return array of related records
-            // The foreign key value should be an array of IDs
-            var results = new List<Dictionary<string, object?>>();
+            // Many-to-many or one-to-many: return Connection object
+            // Check if query is asking for 'items' subfield (Connection pattern)
+            var itemsField = field.SelectionSet?.Selections?.OfType<Field>()
+                .FirstOrDefault(f => f.Name == "items");
             
-            if (foreignKeyValue.ValueKind == JsonValueKind.Array)
+            if (itemsField != null)
             {
-                // Many-to-many: foreign key is an array of IDs
-                // Collect all IDs first for batch loading
-                var ids = new List<string>();
-                foreach (var idElement in foreignKeyValue.EnumerateArray())
-                {
-                    var foreignId = idElement.GetString();
-                    if (!string.IsNullOrEmpty(foreignId))
-                    {
-                        ids.Add(foreignId);
-                    }
-                }
+                // Connection pattern: resolve the items with the nested field selections
+                var results = new List<Dictionary<string, object?>>();
                 
-                // Batch load all related records at once (fixes N+1 problem)
-                foreach (var foreignId in ids)
+                if (foreignKeyValue.ValueKind == JsonValueKind.Array)
                 {
-                    var relatedRecord = relatedTable.Find(foreignId);
-                    if (relatedRecord != null)
+                    // Many-to-many: foreign key is an array of IDs
+                    var ids = new List<string>();
+                    foreach (var idElement in foreignKeyValue.EnumerateArray())
                     {
-                        var recordData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(relatedRecord);
-                        if (recordData != null)
+                        var foreignId = idElement.GetString();
+                        if (!string.IsNullOrEmpty(foreignId))
                         {
-                            results.Add(ProjectFields(recordData, field, fragments, relationColumn.RelatedTable));
+                            ids.Add(foreignId);
                         }
                     }
-                }
-            }
-            else
-            {
-                // One-to-many: need to scan the related table for records that reference this record
-                // This is the reverse direction (e.g., a Character's films where Film has characterId)
-                var currentId = data.TryGetValue("id", out var idElement) ? idElement.GetString() : null;
-                if (currentId != null)
-                {
-                    var allRecords = relatedTable.SelectAll();
-                    foreach (var (key, value) in allRecords)
+                    
+                    // Batch load all related records at once (fixes N+1 problem)
+                    foreach (var foreignId in ids)
                     {
-                        var recordData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(value);
-                        if (recordData != null && recordData.TryGetValue(foreignKeyField, out var recordFk))
+                        var relatedRecord = relatedTable.Find(foreignId);
+                        if (relatedRecord != null)
                         {
-                            if (recordFk.GetString() == currentId)
+                            var recordData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(relatedRecord);
+                            if (recordData != null)
                             {
-                                results.Add(ProjectFields(recordData, field, fragments, relationColumn.RelatedTable));
+                                results.Add(ProjectFields(recordData, itemsField, fragments, relationColumn.RelatedTable));
                             }
                         }
                     }
                 }
+                else
+                {
+                    // One-to-many: scan related table for records that reference this record
+                    var currentId = data.TryGetValue("id", out var idElement) ? idElement.GetString() : null;
+                    if (currentId != null)
+                    {
+                        var allRecords = relatedTable.SelectAll();
+                        foreach (var (key, value) in allRecords)
+                        {
+                            var recordData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(value);
+                            if (recordData != null && recordData.TryGetValue(foreignKeyField, out var recordFk))
+                            {
+                                if (recordFk.GetString() == currentId)
+                                {
+                                    results.Add(ProjectFields(recordData, itemsField, fragments, relationColumn.RelatedTable));
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Apply filtering, ordering, and pagination from items field arguments
+                var filteredResults = ApplyFiltersAndPagination(results, itemsField, relationColumn.RelatedTable);
+                
+                // Return Connection object
+                return new Dictionary<string, object?>
+                {
+                    ["items"] = filteredResults
+                };
             }
-            
-            return results;
+            else
+            {
+                // Legacy: No items field requested, return empty Connection
+                // This handles the case where the query just asks for "friends" without "items { ... }"
+                return new Dictionary<string, object?>
+                {
+                    ["items"] = new List<Dictionary<string, object?>>()
+                };
+            }
         }
         else
         {
@@ -689,6 +710,74 @@ public class GraphQLExecutor
         }
         
         return null;
+    }
+    
+    private List<Dictionary<string, object?>> ApplyFiltersAndPagination(List<Dictionary<string, object?>> data, Field field, string tableName)
+    {
+        // Convert data to JsonElement-based records for filtering
+        var jsonRecords = data.Select(item => 
+            JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                JsonSerializer.Serialize(item)) ?? new Dictionary<string, JsonElement>()
+        ).ToList();
+        
+        var filteredRecords = jsonRecords;
+        
+        // Apply WHERE filtering using existing FilterEvaluator
+        var whereArg = field.Arguments.FirstOrDefault(a => a.Name == "where");
+        if (whereArg != null)
+        {
+            var whereValue = ResolveValue(whereArg.Value, null);
+            if (whereValue is JsonElement whereElement)
+            {
+                // Use the existing FilterEvaluator for consistency
+                filteredRecords = FilterEvaluator.ApplyFilters(filteredRecords, whereElement);
+            }
+        }
+        
+        // Apply ORDER BY using existing FilterEvaluator
+        var orderByArg = field.Arguments.FirstOrDefault(a => a.Name == "orderBy");
+        if (orderByArg != null)
+        {
+            var orderByValue = ResolveValue(orderByArg.Value, null);
+            if (orderByValue is JsonElement orderByElement)
+            {
+                filteredRecords = FilterEvaluator.ApplySorting(filteredRecords, orderByElement);
+            }
+        }
+        
+        // Apply SKIP/TAKE pagination
+        int? skip = null;
+        int? take = null;
+        
+        var skipArg = field.Arguments.FirstOrDefault(a => a.Name == "skip");
+        if (skipArg != null)
+        {
+            var skipValue = ResolveValue(skipArg.Value, null);
+            if (skipValue is JsonElement skipElement && skipElement.TryGetInt32(out var skipInt))
+            {
+                skip = skipInt;
+            }
+        }
+        
+        var takeArg = field.Arguments.FirstOrDefault(a => a.Name == "take");
+        if (takeArg != null)
+        {
+            var takeValue = ResolveValue(takeArg.Value, null);
+            if (takeValue is JsonElement takeElement && takeElement.TryGetInt32(out var takeInt))
+            {
+                take = takeInt;
+            }
+        }
+        
+        filteredRecords = FilterEvaluator.ApplyPagination(filteredRecords, skip, take);
+        
+        // Convert back to Dictionary<string, object?>
+        return filteredRecords.Select(record => 
+            record.ToDictionary(
+                kvp => kvp.Key,
+                kvp => (object?)ConvertJsonElement(kvp.Value)
+            )
+        ).ToList();
     }
     
     private object? ConvertJsonElement(JsonElement element)
@@ -1633,7 +1722,7 @@ public class GraphQLExecutor
             ["kind"] = "OBJECT",
             ["name"] = name,
             ["description"] = $"{name} type",
-            ["fields"] = BuildFields(typeDef, field),
+            ["fields"] = BuildFields(name, typeDef, field),
             ["inputFields"] = null,
             ["interfaces"] = new List<object>(),
             ["enumValues"] = null,
@@ -1701,21 +1790,70 @@ public class GraphQLExecutor
         };
     }
     
-    private List<Dictionary<string, object?>>? BuildFields(TypeDefinition typeDef, Field field)
+    private List<Dictionary<string, object?>>? BuildFields(string typeName, TypeDefinition typeDef, Field field)
     {
         if (typeDef.Fields.Count == 0)
             return new List<Dictionary<string, object?>>();
         
         var fields = new List<Dictionary<string, object?>>();
         
+        // Try to get table metadata for relationship checking
+        TableMetadata? tableMetadata = null;
+        if (_tables.TryGetValue(typeName, out var table))
+        {
+            tableMetadata = table.GetMetadata();
+        }
+        
         foreach (var fieldDef in typeDef.Fields)
         {
+            // Check if this field is a relationship that returns a list
+            bool isListRelationship = false;
+            string? relatedTypeName = null;
+            
+            if (tableMetadata != null)
+            {
+                var relationColumn = tableMetadata.Columns?.FirstOrDefault(c => c.Name == fieldDef.Name);
+                if (relationColumn != null && !string.IsNullOrEmpty(relationColumn.RelatedTable))
+                {
+                    isListRelationship = relationColumn.IsList || relationColumn.RelationType == RelationType.OneToMany;
+                    relatedTypeName = relationColumn.RelatedTable;
+                }
+            }
+            
+            // If it's a list relationship, wrap it as a Connection type
+            Dictionary<string, object?> fieldType;
+            List<object> args = new List<object>();
+            
+            if (isListRelationship && relatedTypeName != null)
+            {
+                // Return ConnectionType with filtering/pagination arguments
+                fieldType = new Dictionary<string, object?>
+                {
+                    ["kind"] = "NON_NULL",
+                    ["name"] = null,
+                    ["ofType"] = new Dictionary<string, object?>
+                    {
+                        ["kind"] = "OBJECT",
+                        ["name"] = $"{relatedTypeName}Connection",
+                        ["ofType"] = null
+                    }
+                };
+                
+                // Add standard Connection arguments (these are handled by the Connection type's items field)
+                // No arguments needed at the Connection level
+            }
+            else
+            {
+                // Regular field - use its defined type
+                fieldType = BuildTypeRef(fieldDef.Type, field);
+            }
+            
             var fieldInfo = new Dictionary<string, object?>
             {
                 ["name"] = fieldDef.Name,
                 ["description"] = null,
-                ["args"] = new List<object>(),
-                ["type"] = BuildTypeRef(fieldDef.Type, field),
+                ["args"] = args,
+                ["type"] = fieldType,
                 ["isDeprecated"] = false,
                 ["deprecationReason"] = null
             };
