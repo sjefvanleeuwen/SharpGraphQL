@@ -132,14 +132,13 @@ public class SchemaLoader
             var typeDef = typeDefinitions.FirstOrDefault(t => t.Name == parsedType.Name);
             
             // Skip Query and Mutation - they define operations, not data to store
-            // But still register them with executor for introspection
+            // DON'T register them from the schema file because GetQueryFields() dynamically
+            // generates the correct Query type with Connection wrappers (e.g., CharacterConnection)
+            // If we register the schema.graphql version (which has [Character]!), it overrides
+            // the dynamic Connection types and breaks introspection
             if (parsedType.Name == "Query" || parsedType.Name == "Mutation")
             {
-                Console.WriteLine($"  ⏭️  Registering {parsedType.Name} (operation type, no table needed)");
-                if (typeDef != null)
-                {
-                    _executor.RegisterOperationType(parsedType.Name, typeDef);
-                }
+                Console.WriteLine($"  ⏭️  Skipping {parsedType.Name} registration (will be dynamically generated with Connection types)");
                 continue;
             }
             
