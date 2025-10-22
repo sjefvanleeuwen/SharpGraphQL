@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SharpGraph.Core\SharpGraph.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Copy schema and data files to output directory -->
+  <ItemGroup>
+    <None Update="schema.graphql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="seed_data.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Choose which program to compile -->
+  <ItemGroup>
+    <!-- Uncomment ONE of these to choose which program to run: -->
+    
+    <!-- Option 1: Local database demo (default) -->
+    <!-- <Compile Remove="Program.cs" /> -->
+    
+    <!-- Option 2: Upload to server -->
+    <Compile Remove="EVChargingClient.cs" />
+  </ItemGroup>
+
+</Project>
+
+
+
+
+
+
+
+
+

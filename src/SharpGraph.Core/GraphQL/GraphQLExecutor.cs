@@ -9,11 +9,11 @@ namespace SharpGraph.Core.GraphQL;
 /// </summary>
 public class GraphQLExecutor
 {
-    private readonly Dictionary<string, Table> _tables = new();
-    private readonly Dictionary<string, TypeDefinition> _schema = new();
-    private readonly Dictionary<string, TypeDefinition> _inputTypes = new();
-    private readonly Dictionary<string, Dictionary<string, object?>> _generatedObjectTypes = new();  // For Connection types
-    private readonly Dictionary<string, List<string>> _enumTypes = new();
+    private readonly Dictionary<string, Table> _tables = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TypeDefinition> _schema = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TypeDefinition> _inputTypes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Dictionary<string, object?>> _generatedObjectTypes = new(StringComparer.OrdinalIgnoreCase);  // For Connection types
+    private readonly Dictionary<string, List<string>> _enumTypes = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _dbPath;
     private readonly DynamicIndexOptimizer _indexOptimizer = new();
     
@@ -179,22 +179,40 @@ public class GraphQLExecutor
         }
         
         // Handle data queries
-        var tableName = char.ToUpper(field.Name[0]) + field.Name.Substring(1);
+        // Try to find the table by matching the query field name (which is lowercase plural)
+        // to the registered table names
+        Table? table = null;
+        string? tableName = null;
         
-        // Remove trailing 's' for plural (simple heuristic)
-        if (tableName.EndsWith("s"))
-            tableName = tableName.Substring(0, tableName.Length - 1);
+        // Try exact match first (for backward compatibility)
+        var capitalizedName = char.ToUpper(field.Name[0]) + field.Name.Substring(1);
+        if (capitalizedName.EndsWith("s"))
+            capitalizedName = capitalizedName.Substring(0, capitalizedName.Length - 1);
         
-        if (!_tables.TryGetValue(tableName, out var table))
+        if (_tables.TryGetValue(capitalizedName, out table))
         {
-            // Try singular/plural variations
-            if (_tables.TryGetValue(field.Name, out table))
+            tableName = capitalizedName;
+        }
+        else
+        {
+            // Try case-insensitive match against all table names
+            // Look for table name that matches when both are lowercased and 's' is removed
+            var queryName = field.Name.ToLower().TrimEnd('s');
+            
+            foreach (var kvp in _tables)
             {
-                tableName = field.Name;
+                var registeredName = kvp.Key.ToLower();
+                if (registeredName == queryName || registeredName + "s" == field.Name.ToLower())
+                {
+                    table = kvp.Value;
+                    tableName = kvp.Key;
+                    break;
+                }
             }
-            else
+            
+            if (table == null)
             {
-                throw new Exception($"Table '{tableName}' not found");
+                throw new Exception($"Table for query '{field.Name}' not found");
             }
         }
         

@@ -1,0 +1,265 @@
+# EV Charging Management System Schema
+
+type Person {
+  id: ID!
+  name: String!
+  email: String!
+  phone: String
+  address: String
+  city: String
+  country: String
+  registrationDate: String!
+  status: String!
+  
+  # Relationships
+  chargeCards: [ChargeCard!]! @relation(from: "id", to: "personId")
+}
+
+type ChargeCard {
+  id: ID!
+  personId: ID!
+  cardNumber: String!
+  cardType: String!
+  issuer: String!
+  expiryDate: String!
+  status: String!
+  issuedDate: String!
+  
+  # Relationships
+  person: Person @relation(from: "personId", to: "id")
+  chargeTokens: [ChargeToken!]! @relation(from: "id", to: "chargeCardId")
+}
+
+type ChargeToken {
+  id: ID!
+  chargeCardId: ID!
+  tokenIdentifier: String!
+  tokenType: String!
+  visualNumber: String
+  status: String!
+  activatedDate: String!
+  lastUsed: String
+  
+  # Relationships
+  chargeCard: ChargeCard @relation(from: "chargeCardId", to: "id")
+  chargeSessions: [ChargeSession!]! @relation(from: "id", to: "chargeTokenId")
+  chargeDetailRecords: [ChargeDetailRecord!]! @relation(from: "id", to: "chargeTokenId")
+}
+
+type ChargeStation {
+  id: ID!
+  name: String!
+  operator: String!
+  location: String!
+  address: String!
+  city: String!
+  country: String!
+  latitude: Float!
+  longitude: Float!
+  status: String!
+  totalConnectors: Int!
+  availableConnectors: Int!
+  openingHours: String
+  
+  # Relationships
+  connectors: [Connector!]! @relation(from: "id", to: "chargeStationId")
+  chargeSessions: [ChargeSession!]! @relation(from: "id", to: "chargeStationId")
+  chargeDetailRecords: [ChargeDetailRecord!]! @relation(from: "id", to: "chargeStationId")
+}
+
+type Connector {
+  id: ID!
+  chargeStationId: ID!
+  connectorNumber: Int!
+  connectorType: String!
+  powerType: String!
+  maxPower: Float!
+  voltage: Int!
+  amperage: Int!
+  status: String!
+  pricePerKwh: Float!
+  pricePerMinute: Float
+  
+  # Relationships
+  chargeStation: ChargeStation @relation(from: "chargeStationId", to: "id")
+  chargeSessions: [ChargeSession!]! @relation(from: "id", to: "connectorId")
+  chargeDetailRecords: [ChargeDetailRecord!]! @relation(from: "id", to: "connectorId")
+}
+
+type ChargeSession {
+  id: ID!
+  chargeTokenId: ID!
+  connectorId: ID!
+  chargeStationId: ID!
+  status: String!
+  startTime: String!
+  endTime: String
+  authMethod: String!
+  meterStartValue: Float!
+  meterEndValue: Float
+  reservationId: String
+  
+  # Relationships
+  chargeToken: ChargeToken @relation(from: "chargeTokenId", to: "id")
+  connector: Connector @relation(from: "connectorId", to: "id")
+  chargeStation: ChargeStation @relation(from: "chargeStationId", to: "id")
+  chargeDetailRecord: ChargeDetailRecord @relation(from: "id", to: "chargeSessionId")
+}
+
+type ChargeDetailRecord {
+  id: ID!
+  chargeSessionId: ID!
+  chargeTokenId: ID!
+  connectorId: ID!
+  chargeStationId: ID!
+  startTime: String!
+  endTime: String!
+  duration: Int!
+  energyDelivered: Float!
+  meterStartValue: Float!
+  meterEndValue: Float!
+  pricePerKwh: Float!
+  totalCost: Float!
+  currency: String!
+  status: String!
+  authMethod: String!
+  tariffDescription: String
+  
+  # Relationships
+  chargeSession: ChargeSession @relation(from: "chargeSessionId", to: "id")
+  chargeToken: ChargeToken @relation(from: "chargeTokenId", to: "id")
+  connector: Connector @relation(from: "connectorId", to: "id")
+  chargeStation: ChargeStation @relation(from: "chargeStationId", to: "id")
+}
+
+# Input Types for Mutations
+
+input PersonInput {
+  name: String!
+  email: String!
+  phone: String
+  address: String
+  city: String
+  country: String
+  registrationDate: String!
+  status: String!
+}
+
+input ChargeCardInput {
+  personId: ID!
+  cardNumber: String!
+  cardType: String!
+  issuer: String!
+  expiryDate: String!
+  status: String!
+  issuedDate: String!
+}
+
+input ChargeTokenInput {
+  chargeCardId: ID!
+  tokenIdentifier: String!
+  tokenType: String!
+  visualNumber: String
+  status: String!
+  activatedDate: String!
+  lastUsed: String
+}
+
+input ChargeStationInput {
+  name: String!
+  operator: String!
+  location: String!
+  address: String!
+  city: String!
+  country: String!
+  latitude: Float!
+  longitude: Float!
+  status: String!
+  totalConnectors: Int!
+  availableConnectors: Int!
+  openingHours: String
+}
+
+input ConnectorInput {
+  chargeStationId: ID!
+  connectorNumber: Int!
+  connectorType: String!
+  powerType: String!
+  maxPower: Float!
+  voltage: Int!
+  amperage: Int!
+  status: String!
+  pricePerKwh: Float!
+  pricePerMinute: Float
+}
+
+input ChargeSessionInput {
+  chargeTokenId: ID!
+  connectorId: ID!
+  chargeStationId: ID!
+  status: String!
+  startTime: String!
+  endTime: String
+  authMethod: String!
+  meterStartValue: Float!
+  meterEndValue: Float
+  reservationId: String
+}
+
+input ChargeDetailRecordInput {
+  chargeSessionId: ID!
+  chargeTokenId: ID!
+  connectorId: ID!
+  chargeStationId: ID!
+  startTime: String!
+  endTime: String!
+  duration: Int!
+  energyDelivered: Float!
+  meterStartValue: Float!
+  meterEndValue: Float!
+  pricePerKwh: Float!
+  totalCost: Float!
+  currency: String!
+  status: String!
+  authMethod: String!
+  tariffDescription: String
+}
+
+# Mutations for CRUD Operations
+
+type Mutation {
+  # Person mutations
+  createPerson(input: PersonInput!): Person!
+  updatePerson(id: ID!, input: PersonInput!): Person!
+  deletePerson(id: ID!): Boolean!
+
+  # ChargeCard mutations
+  createChargeCard(input: ChargeCardInput!): ChargeCard!
+  updateChargeCard(id: ID!, input: ChargeCardInput!): ChargeCard!
+  deleteChargeCard(id: ID!): Boolean!
+
+  # ChargeToken mutations
+  createChargeToken(input: ChargeTokenInput!): ChargeToken!
+  updateChargeToken(id: ID!, input: ChargeTokenInput!): ChargeToken!
+  deleteChargeToken(id: ID!): Boolean!
+
+  # ChargeStation mutations
+  createChargeStation(input: ChargeStationInput!): ChargeStation!
+  updateChargeStation(id: ID!, input: ChargeStationInput!): ChargeStation!
+  deleteChargeStation(id: ID!): Boolean!
+
+  # Connector mutations
+  createConnector(input: ConnectorInput!): Connector!
+  updateConnector(id: ID!, input: ConnectorInput!): Connector!
+  deleteConnector(id: ID!): Boolean!
+
+  # ChargeSession mutations
+  createChargeSession(input: ChargeSessionInput!): ChargeSession!
+  updateChargeSession(id: ID!, input: ChargeSessionInput!): ChargeSession!
+  deleteChargeSession(id: ID!): Boolean!
+
+  # ChargeDetailRecord mutations
+  createChargeDetailRecord(input: ChargeDetailRecordInput!): ChargeDetailRecord!
+  updateChargeDetailRecord(id: ID!, input: ChargeDetailRecordInput!): ChargeDetailRecord!
+  deleteChargeDetailRecord(id: ID!): Boolean!
+}

@@ -4,12 +4,13 @@ using System.Runtime.InteropServices;
 namespace SharpGraph.Core.Storage;
 
 /// <summary>
-/// Fixed-size page (4KB) - the fundamental unit of storage
+/// Fixed-size page (64KB) - the fundamental unit of storage
 /// Uses ArrayPool for efficient memory management
+/// Increased from 4KB to 64KB to support large schemas with many entities and indexes
 /// </summary>
 public class Page : IDisposable
 {
-    public const int PageSize = 4096;
+    public const int PageSize = 65536;
     
     public long PageId { get; }
     private byte[] _data;

@@ -11,7 +11,7 @@ public class SchemaLoader
 {
     private readonly string _dbPath;
     private readonly GraphQLExecutor _executor;
-    private readonly Dictionary<string, Table> _tables = new();
+    private readonly Dictionary<string, Table> _tables = new(StringComparer.OrdinalIgnoreCase);
     
     public SchemaLoader(string dbPath, GraphQLExecutor executor)
     {
