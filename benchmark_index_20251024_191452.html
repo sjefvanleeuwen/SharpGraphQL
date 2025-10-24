@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SharpGraph Benchmark Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
+    h2 { color: #0066cc; margin-top: 30px; }
+    .summary { background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 10px 0; }
+    .metric { display: inline-block; margin-right: 30px; }
+    .metric-label { font-weight: bold; color: #666; }
+    .metric-value { font-size: 1.4em; color: #0066cc; }
+    table { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: right; }
+    th { background: #0066cc; color: white; font-weight: bold; }
+    td:first-child, th:first-child { text-align: left; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .chart-container { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    canvas { max-height: 300px; }
+  </style>
+</head>
+<body>
+<div class="container">
+<h1>SharpGraph Benchmark Report</h1>
+<div class="summary">
+  <div class="metric"><div class="metric-label">Benchmarks</div><div class="metric-value">6</div></div>
+  <div class="metric"><div class="metric-label">Total Time</div><div class="metric-value">0,08s</div></div>
+  <div class="metric"><div class="metric-label">Timestamp</div><div class="metric-value">2025-10-24 17:14:52</div></div>
+</div>
+<h2>Results Summary</h2>
+<table>
+  <tr>
+    <th>Benchmark</th>
+    <th>Operations</th>
+    <th>Success Rate</th>
+    <th>Avg (ms)</th>
+    <th>Min (ms)</th>
+    <th>Max (ms)</th>
+    <th>P95 (ms)</th>
+    <th>P99 (ms)</th>
+    <th>Ops/sec</th>
+  </tr>
+  <tr>
+    <td>BTree Exact Match Lookup</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,0613</td>
+    <td>0,0003</td>
+    <td>0,0081</td>
+    <td>0,0045</td>
+    <td>0,0081</td>
+    <td>16308,38</td>
+  </tr>
+  <tr>
+    <td>BTree Range Query</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,0818</td>
+    <td>0,0022</td>
+    <td>0,0088</td>
+    <td>0,0071</td>
+    <td>0,0088</td>
+    <td>12224,94</td>
+  </tr>
+  <tr>
+    <td>BTree Greater-Than Query</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,1270</td>
+    <td>0,0048</td>
+    <td>0,0456</td>
+    <td>0,0405</td>
+    <td>0,0456</td>
+    <td>7876,46</td>
+  </tr>
+  <tr>
+    <td>BTree String Key Lookup</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,1862</td>
+    <td>0,0013</td>
+    <td>0,0243</td>
+    <td>0,0174</td>
+    <td>0,0243</td>
+    <td>5369,96</td>
+  </tr>
+  <tr>
+    <td>BTree Sorted Traversal</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,1422</td>
+    <td>0,0084</td>
+    <td>0,0340</td>
+    <td>0,0332</td>
+    <td>0,0340</td>
+    <td>7030,70</td>
+  </tr>
+  <tr>
+    <td>Index Insertion</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,1799</td>
+    <td>0,0004</td>
+    <td>0,0213</td>
+    <td>0,0184</td>
+    <td>0,0213</td>
+    <td>5559,49</td>
+  </tr>
+</table>
+<h2>Performance Charts</h2>
+<div class="chart-container">
+  <h3>Operations per Second</h3>
+  <canvas id="opsChart"></canvas>
+</div>
+<div class="chart-container">
+  <h3>Average Operation Time (ms)</h3>
+  <canvas id="avgChart"></canvas>
+</div>
+<div class="chart-container">
+  <h3>Latency Distribution (P50/P95/P99)</h3>
+  <canvas id="percentileChart"></canvas>
+</div>
+<script>
+  const opsCtx = document.getElementById('opsChart').getContext('2d');
+  new Chart(opsCtx, {
+    type: 'bar',
+    data: {
+      labels: ["BTree Exact Match Lookup", "BTree Range Query", "BTree Greater-Than Query", "BTree String Key Lookup", "BTree Sorted Traversal", "Index Insertion"],
+      datasets: [{
+        label: 'Ops/sec',
+        data: [16308,37657524092, 12224,938875305625, 7876,458935007279, 5369,95752851773, 7030,700726505742, 5559,486505610027],
+        backgroundColor: 'rgba(0, 102, 204, 0.6)',
+        borderColor: 'rgba(0, 102, 204, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+  const avgCtx = document.getElementById('avgChart').getContext('2d');
+  new Chart(avgCtx, {
+    type: 'bar',
+    data: {
+      labels: ["BTree Exact Match Lookup", "BTree Range Query", "BTree Greater-Than Query", "BTree String Key Lookup", "BTree Sorted Traversal", "Index Insertion"],
+      datasets: [{
+        label: 'Avg (ms)',
+        data: [0,06131818181818181, 0,0818, 0,12696060606060608, 0,18622121212121212, 0,14223333333333332, 0,1798727272727273],
+        backgroundColor: 'rgba(102, 153, 0, 0.6)',
+        borderColor: 'rgba(102, 153, 0, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+  const percCtx = document.getElementById('percentileChart').getContext('2d');
+  new Chart(percCtx, {
+    type: 'line',
+    data: {
+      labels: ["BTree Exact Match Lookup", "BTree Range Query", "BTree Greater-Than Query", "BTree String Key Lookup", "BTree Sorted Traversal", "Index Insertion"],
+      datasets: [
+        { label: 'P50', data: [0,0005, 0,004, 0,0123, 0,003, 0,0107, 0,0006], borderColor: 'rgba(0, 102, 204, 1)', fill: false },
+        { label: 'P95', data: [0,0045, 0,0071, 0,0405, 0,0174, 0,0332, 0,0184], borderColor: 'rgba(255, 165, 0, 1)', fill: false },
+        { label: 'P99', data: [0,0081, 0,0088, 0,0456, 0,0243, 0,034, 0,0213], borderColor: 'rgba(255, 0, 0, 1)', fill: false }
+      ]
+    },
+    options: { responsive: true }
+  });
+</script>
+</div>
+</body>
+</html>

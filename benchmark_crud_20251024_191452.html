@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SharpGraph Benchmark Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
+    h2 { color: #0066cc; margin-top: 30px; }
+    .summary { background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 10px 0; }
+    .metric { display: inline-block; margin-right: 30px; }
+    .metric-label { font-weight: bold; color: #666; }
+    .metric-value { font-size: 1.4em; color: #0066cc; }
+    table { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: right; }
+    th { background: #0066cc; color: white; font-weight: bold; }
+    td:first-child, th:first-child { text-align: left; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .chart-container { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    canvas { max-height: 300px; }
+  </style>
+</head>
+<body>
+<div class="container">
+<h1>SharpGraph Benchmark Report</h1>
+<div class="summary">
+  <div class="metric"><div class="metric-label">Benchmarks</div><div class="metric-value">4</div></div>
+  <div class="metric"><div class="metric-label">Total Time</div><div class="metric-value">2,25s</div></div>
+  <div class="metric"><div class="metric-label">Timestamp</div><div class="metric-value">2025-10-24 17:14:52</div></div>
+</div>
+<h2>Results Summary</h2>
+<table>
+  <tr>
+    <th>Benchmark</th>
+    <th>Operations</th>
+    <th>Success Rate</th>
+    <th>Avg (ms)</th>
+    <th>Min (ms)</th>
+    <th>Max (ms)</th>
+    <th>P95 (ms)</th>
+    <th>P99 (ms)</th>
+    <th>Ops/sec</th>
+  </tr>
+  <tr>
+    <td>Insert Operations</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,0466</td>
+    <td>0,0083</td>
+    <td>0,0882</td>
+    <td>0,0638</td>
+    <td>0,0882</td>
+    <td>21459,23</td>
+  </tr>
+  <tr>
+    <td>Select All (Full Scan)</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>8,3964</td>
+    <td>7,2167</td>
+    <td>17,5756</td>
+    <td>10,2184</td>
+    <td>17,5756</td>
+    <td>119,10</td>
+  </tr>
+  <tr>
+    <td>Select By ID</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,0461</td>
+    <td>0,0014</td>
+    <td>0,0168</td>
+    <td>0,0103</td>
+    <td>0,0168</td>
+    <td>21706,24</td>
+  </tr>
+  <tr>
+    <td>Index Lookup</td>
+    <td>33</td>
+    <td>100,00%</td>
+    <td>0,0522</td>
+    <td>0,0001</td>
+    <td>0,0080</td>
+    <td>0,0043</td>
+    <td>0,0080</td>
+    <td>19157,09</td>
+  </tr>
+</table>
+<h2>Performance Charts</h2>
+<div class="chart-container">
+  <h3>Operations per Second</h3>
+  <canvas id="opsChart"></canvas>
+</div>
+<div class="chart-container">
+  <h3>Average Operation Time (ms)</h3>
+  <canvas id="avgChart"></canvas>
+</div>
+<div class="chart-container">
+  <h3>Latency Distribution (P50/P95/P99)</h3>
+  <canvas id="percentileChart"></canvas>
+</div>
+<script>
+  const opsCtx = document.getElementById('opsChart').getContext('2d');
+  new Chart(opsCtx, {
+    type: 'bar',
+    data: {
+      labels: ["Insert Operations", "Select All (Full Scan)", "Select By ID", "Index Lookup"],
+      datasets: [{
+        label: 'Ops/sec',
+        data: [21459,227467811157, 119,09805956779675, 21706,242189041634, 19157,088122605364],
+        backgroundColor: 'rgba(0, 102, 204, 0.6)',
+        borderColor: 'rgba(0, 102, 204, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+  const avgCtx = document.getElementById('avgChart').getContext('2d');
+  new Chart(avgCtx, {
+    type: 'bar',
+    data: {
+      labels: ["Insert Operations", "Select All (Full Scan)", "Select By ID", "Index Lookup"],
+      datasets: [{
+        label: 'Avg (ms)',
+        data: [0,0466, 8,396442424242425, 0,04606969696969697, 0,052199999999999996],
+        backgroundColor: 'rgba(102, 153, 0, 0.6)',
+        borderColor: 'rgba(102, 153, 0, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+  const percCtx = document.getElementById('percentileChart').getContext('2d');
+  new Chart(percCtx, {
+    type: 'line',
+    data: {
+      labels: ["Insert Operations", "Select All (Full Scan)", "Select By ID", "Index Lookup"],
+      datasets: [
+        { label: 'P50', data: [0,0109, 7,625, 0,0022, 0,0002], borderColor: 'rgba(0, 102, 204, 1)', fill: false },
+        { label: 'P95', data: [0,0638, 10,2184, 0,0103, 0,0043], borderColor: 'rgba(255, 165, 0, 1)', fill: false },
+        { label: 'P99', data: [0,0882, 17,5756, 0,0168, 0,008], borderColor: 'rgba(255, 0, 0, 1)', fill: false }
+      ]
+    },
+    options: { responsive: true }
+  });
+</script>
+</div>
+</body>
+</html>

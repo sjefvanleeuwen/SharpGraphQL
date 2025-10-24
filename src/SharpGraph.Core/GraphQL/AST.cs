@@ -115,6 +115,18 @@ public class TypeDefinition : Definition
     public List<FieldDefinition> Fields { get; set; } = new();
 }
 
+public class EnumDefinition : Definition
+{
+    public string Name { get; set; } = string.Empty;
+    public List<string> Values { get; set; } = new();
+}
+
+public class InputDefinition : Definition
+{
+    public string Name { get; set; } = string.Empty;
+    public List<FieldDefinition> Fields { get; set; } = new();
+}
+
 public class FieldDefinition : ASTNode
 {
     public string Name { get; set; } = string.Empty;
@@ -128,4 +140,3 @@ public class InputValueDefinition : ASTNode
     public TypeNode Type { get; set; } = new NamedType { Name = "String" };
     public JsonElement? DefaultValue { get; set; }
 }
-

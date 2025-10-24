@@ -1,4 +1,4 @@
-using SharpGraph.Db.Storage;
+using SharpGraph.Core.Storage;
 using Xunit;
 
 namespace SharpGraph.Tests.Storage;
@@ -363,19 +363,13 @@ public class PersistentIndexTests : IDisposable
         var tableName = "users";
         
         // Create and populate table
-        var schema = """
+        using (var table = Table.Create(tableName, dbPath, """
             type User {
                 id: ID!
                 name: String!
                 age: Int!
             }
-            """;
-        var parser = new SharpGraph.Core.GraphQLSchemaParser(schema);
-        var types = parser.ParseTypes();
-        var userType = types.FirstOrDefault(t => string.Equals(t.Name, "User", StringComparison.OrdinalIgnoreCase));
-        var metadata = userType != null ? SharpGraph.Core.GraphQLSchemaParser.ToTableMetadata(userType) : null;
-        
-        using (var table = Table.Create(tableName, dbPath, metadata?.Columns))
+            """))
         {
             table.CreateIndex<int>("age");
             
@@ -425,21 +419,14 @@ public class PersistentIndexTests : IDisposable
         Directory.CreateDirectory(dbPath);
         var tableName = "products";
         
-        // Parse schema
-        var schema = """
+        // Round 1: Create and populate
+        using (var table = Table.Create(tableName, dbPath, """
             type Product {
                 id: ID!
                 name: String!
                 price: Float!
             }
-            """;
-        var parser = new SharpGraph.Core.GraphQLSchemaParser(schema);
-        var types = parser.ParseTypes();
-        var productType = types.FirstOrDefault(t => string.Equals(t.Name, "Product", StringComparison.OrdinalIgnoreCase));
-        var metadata = productType != null ? SharpGraph.Core.GraphQLSchemaParser.ToTableMetadata(productType) : null;
-        
-        // Round 1: Create and populate
-        using (var table = Table.Create(tableName, dbPath, metadata?.Columns))
+            """))
         {
             table.CreateIndex<double>("price");
             table.Insert("p1", """{"id":"p1","name":"Widget","price":9.99}""");
@@ -471,20 +458,13 @@ public class PersistentIndexTests : IDisposable
         Directory.CreateDirectory(dbPath);
         var tableName = "items";
         
-        // Parse schema
-        var schema = """
+        // Create table
+        using (var table = Table.Create(tableName, dbPath, """
             type Item {
                 id: ID!
                 value: Int!
             }
-            """;
-        var parser = new SharpGraph.Core.GraphQLSchemaParser(schema);
-        var types = parser.ParseTypes();
-        var itemType = types.FirstOrDefault(t => string.Equals(t.Name, "Item", StringComparison.OrdinalIgnoreCase));
-        var metadata = itemType != null ? SharpGraph.Core.GraphQLSchemaParser.ToTableMetadata(itemType) : null;
-        
-        // Create table
-        using (var table = Table.Create(tableName, dbPath, metadata?.Columns))
+            """))
         {
             table.CreateIndex<int>("value");
             table.Insert("i1", """{"id":"i1","value":10}""");
@@ -513,5 +493,3 @@ public class PersistentIndexTests : IDisposable
     
     #endregion
 }
-
-

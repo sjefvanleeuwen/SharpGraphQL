@@ -1,25 +1,37 @@
 using System.Text.Json;
+using SharpGraph.Core.GraphQL;
+using SharpGraph.Core.Storage;
 
 namespace SharpGraph.Examples;
 
 /// <summary>
-/// Star Wars seed data generator
-/// Generates seed_data.json with all Star Wars entities
+/// Comprehensive Star Wars database setup based on the official GraphQL Star Wars schema
+/// Includes Characters (Humans and Droids), Films, Planets, Species, Starships, and Vehicles
 /// </summary>
-public class StarWarsDataGenerator
+public class StarWarsDatabase
 {
-    // In-memory data collections
-    private readonly List<object> _characters = new();
-    private readonly List<object> _films = new();
-    private readonly List<object> _planets = new();
-    private readonly List<object> _species = new();
-    private readonly List<object> _starships = new();
-    private readonly List<object> _vehicles = new();
+    private readonly string _dbPath;
+    private readonly GraphQLExecutor _executor;
     
-    public StarWarsDataGenerator()
+    // Tables
+    private Table _characterTable = null!;
+    private Table _filmTable = null!;
+    private Table _planetTable = null!;
+    private Table _speciesTable = null!;
+    private Table _starshipTable = null!;
+    private Table _vehicleTable = null!;
+    
+    public StarWarsDatabase(string dbPath = "starwars_db")
     {
-        GenerateData();
+        _dbPath = dbPath;
+        Directory.CreateDirectory(dbPath);
+        _executor = new GraphQLExecutor(dbPath);
+        
+        InitializeSchema();
+        PopulateSampleData();
     }
+    
+    public GraphQLExecutor Executor => _executor;
     
     private Table CreateOrOpenTable(string name, string schema, List<ColumnDefinition> columns)
     {
@@ -29,8 +41,6 @@ public class StarWarsDataGenerator
         if (File.Exists(tablePath))
         {
             table = Table.Open(name, _dbPath);
-            // Always update schema metadata to ensure relationships are current
-            table.SetSchema(schema, columns);
         }
         else
         {
@@ -188,49 +198,7 @@ type Film {
             new() { Name = "planetIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true },
             new() { Name = "starshipIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true },
             new() { Name = "vehicleIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true },
-            new() { Name = "speciesIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true },
-            
-            // Relationships
-            new() 
-            { 
-                Name = "characters",
-                IsList = true,
-                RelatedTable = "Character",
-                ForeignKey = "filmIds",
-                RelationType = RelationType.OneToMany
-            },
-            new() 
-            { 
-                Name = "planets",
-                IsList = true,
-                RelatedTable = "Planet",
-                ForeignKey = "planetIds",
-                RelationType = RelationType.ManyToMany
-            },
-            new() 
-            { 
-                Name = "starships",
-                IsList = true,
-                RelatedTable = "Starship",
-                ForeignKey = "starshipIds",
-                RelationType = RelationType.ManyToMany
-            },
-            new() 
-            { 
-                Name = "vehicles",
-                IsList = true,
-                RelatedTable = "Vehicle",
-                ForeignKey = "vehicleIds",
-                RelationType = RelationType.ManyToMany
-            },
-            new() 
-            { 
-                Name = "species",
-                IsList = true,
-                RelatedTable = "Species",
-                ForeignKey = "speciesIds",
-                RelationType = RelationType.ManyToMany
-            }
+            new() { Name = "speciesIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true }
         };
         
         _filmTable = CreateOrOpenTable("Film", filmSchema, filmColumns);
@@ -267,28 +235,7 @@ type Planet {
             new() { Name = "population", ScalarType = GraphQLScalarType.String, IsNullable = true },
             new() { Name = "climate", ScalarType = GraphQLScalarType.String, IsNullable = true },
             new() { Name = "terrain", ScalarType = GraphQLScalarType.String, IsNullable = true },
-            new() { Name = "surfaceWater", ScalarType = GraphQLScalarType.String, IsNullable = true },
-            
-            // Foreign key for reverse relationship
-            new() { Name = "residentIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true },
-            
-            // Relationships
-            new() 
-            { 
-                Name = "residents",
-                IsList = true,
-                RelatedTable = "Character",
-                ForeignKey = "homePlanetId",
-                RelationType = RelationType.OneToMany
-            },
-            new() 
-            { 
-                Name = "films",
-                IsList = true,
-                RelatedTable = "Film",
-                ForeignKey = "planetIds",
-                RelationType = RelationType.ManyToMany
-            }
+            new() { Name = "surfaceWater", ScalarType = GraphQLScalarType.String, IsNullable = true }
         };
         
         _planetTable = CreateOrOpenTable("Planet", planetSchema, planetColumns);
@@ -337,22 +284,6 @@ type Species {
                 RelatedTable = "Planet",
                 ForeignKey = "homePlanetId",
                 RelationType = RelationType.ManyToOne
-            },
-            new() 
-            { 
-                Name = "people",
-                IsList = true,
-                RelatedTable = "Character",
-                ForeignKey = "speciesId",
-                RelationType = RelationType.OneToMany
-            },
-            new() 
-            { 
-                Name = "films",
-                IsList = true,
-                RelatedTable = "Film",
-                ForeignKey = "speciesIds",
-                RelationType = RelationType.ManyToMany
             }
         };
         
@@ -398,28 +329,7 @@ type Starship {
             new() { Name = "hyperdriveRating", ScalarType = GraphQLScalarType.String, IsNullable = true },
             new() { Name = "MGLT", ScalarType = GraphQLScalarType.String, IsNullable = true },
             new() { Name = "cargoCapacity", ScalarType = GraphQLScalarType.String, IsNullable = true },
-            new() { Name = "consumables", ScalarType = GraphQLScalarType.String, IsNullable = true },
-            
-            // Foreign key for reverse relationship
-            new() { Name = "pilotIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true },
-            
-            // Relationships
-            new() 
-            { 
-                Name = "pilots",
-                IsList = true,
-                RelatedTable = "Character",
-                ForeignKey = "starshipIds",
-                RelationType = RelationType.OneToMany
-            },
-            new() 
-            { 
-                Name = "films",
-                IsList = true,
-                RelatedTable = "Film",
-                ForeignKey = "starshipIds",
-                RelationType = RelationType.ManyToMany
-            }
+            new() { Name = "consumables", ScalarType = GraphQLScalarType.String, IsNullable = true }
         };
         
         _starshipTable = CreateOrOpenTable("Starship", starshipSchema, starshipColumns);
@@ -460,28 +370,7 @@ type Vehicle {
             new() { Name = "passengers", ScalarType = GraphQLScalarType.String, IsNullable = true },
             new() { Name = "maxAtmospheringSpeed", ScalarType = GraphQLScalarType.String, IsNullable = true },
             new() { Name = "cargoCapacity", ScalarType = GraphQLScalarType.String, IsNullable = true },
-            new() { Name = "consumables", ScalarType = GraphQLScalarType.String, IsNullable = true },
-            
-            // Foreign key for reverse relationship
-            new() { Name = "pilotIds", ScalarType = GraphQLScalarType.String, IsList = true, IsNullable = true },
-            
-            // Relationships
-            new() 
-            { 
-                Name = "pilots",
-                IsList = true,
-                RelatedTable = "Character",
-                ForeignKey = "vehicleIds",
-                RelationType = RelationType.OneToMany
-            },
-            new() 
-            { 
-                Name = "films",
-                IsList = true,
-                RelatedTable = "Film",
-                ForeignKey = "vehicleIds",
-                RelationType = RelationType.ManyToMany
-            }
+            new() { Name = "consumables", ScalarType = GraphQLScalarType.String, IsNullable = true }
         };
         
         _vehicleTable = CreateOrOpenTable("Vehicle", vehicleSchema, vehicleColumns);
@@ -524,34 +413,17 @@ type Vehicle {
         
         // ==================== FILMS ====================
         
-        // Note: Films, Starships, Vehicles are created before Characters
-        // We'll need to update them after characters are created to establish reverse relationships
-        
-        CreateFilm("phantom", "The Phantom Menace", 1,
-            "Turmoil has engulfed the\r\nGalactic Republic. The taxation\r\nof trade routes to outlying star\r\nsystems is in dispute.\r\n\r\nHoping to resolve the matter\r\nwith a blockade of deadly\r\nbattleships, the greedy Trade\r\nFederation has stopped all\r\nshipping to the small planet\r\nof Naboo.\r\n\r\nWhile the Congress of the\r\nRepublic endlessly debates\r\nthis alarming chain of events,\r\nthe Supreme Chancellor has\r\nsecretly dispatched two Jedi\r\nKnights, the guardians of\r\npeace and justice in the\r\ngalaxy, to settle the conflict....",
-            "George Lucas", "Rick McCallum", "1999-05-19");
+        CreateFilm("newhope", "A New Hope", 4, 
+            "It is a period of civil war.\r\nRebel spaceships, striking\r\nfrom a hidden base, have won\r\ntheir first victory against\r\nthe evil Galactic Empire.\r\n\r\nDuring the battle, Rebel\r\nspies managed to steal secret\r\nplans to the Empire's\r\nultimate weapon, the DEATH\r\nSTAR, an armored space\r\nstation with enough power\r\nto destroy an entire planet.\r\n\r\nPursued by the Empire's\r\nsinister agents, Princess\r\nLeia races home aboard her\r\nstarship, custodian of the\r\nstolen plans that can save her\r\npeople and restore\r\nfreedom to the galaxy....",
+            "George Lucas", "Gary Kurtz, Rick McCallum", "1977-05-25");
             
-        CreateFilm("clones", "Attack of the Clones", 2,
-            "There is unrest in the Galactic\r\nSenate. Several thousand solar\r\nsystems have declared their\r\nintentions to leave the Republic.\r\n\r\nThis separatist movement,\r\nunder the leadership of the\r\nmysterious Count Dooku, has\r\nmade it difficult for the limited\r\nnumber of Jedi Knights to maintain\r\npeace and order in the galaxy.\r\n\r\nSenator Amidala, the former\r\nQueen of Naboo, is returning\r\nto the Galactic Senate to vote\r\non the critical issue of creating\r\nan ARMY OF THE REPUBLIC\r\nto assist the overwhelmed\r\nJedi....",
-            "George Lucas", "Rick McCallum", "2002-05-16");
+        CreateFilm("empire", "The Empire Strikes Back", 5,
+            "It is a dark time for the\r\nRebellion. Although the Death\r\nStar has been destroyed,\r\nImperial troops have driven the\r\nRebel forces from their hidden\r\nbase and pursued them across\r\nthe galaxy.\r\n\r\nEvading the dreaded Imperial\r\nStarfleet, a group of freedom\r\nfighters led by Luke Skywalker\r\nhas established a new secret\r\nbase on the remote ice world\r\nof Hoth.\r\n\r\nThe evil lord Darth Vader,\r\nobsessed with finding young\r\nSkywalker, has dispatched\r\nthousands of remote probes into\r\nthe far reaches of space....",
+            "Irvin Kershner", "Gary Kurtz, Rick McCallum", "1980-05-17");
             
-        CreateFilm("sith", "Revenge of the Sith", 3,
-            "War! The Republic is crumbling\r\nunder attacks by the ruthless\r\nSith Lord, Count Dooku.\r\nThere are heroes on both sides.\r\nEvil is everywhere.\r\n\r\nIn a stunning move, the\r\nfiendish droid leader, General\r\nGrievous, has swept into the\r\nRepublic capital and kidnapped\r\nChancellor Palpatine, leader of\r\nthe Galactic Senate.\r\n\r\nAs the Separatist Droid Army\r\nattempts to flee the besieged\r\ncapital with their valuable\r\nhostage, two Jedi Knights lead a\r\ndesperate mission to rescue the\r\ncaptive Chancellor....",
-            "George Lucas", "Rick McCallum", "2005-05-19");
-        
-        // ==================== SEQUEL TRILOGY ====================
-        
-        CreateFilm("awakens", "The Force Awakens", 7,
-            "Luke Skywalker has vanished.\r\nIn his absence, the sinister\r\nFIRST ORDER has risen from\r\nthe ashes of the Empire and\r\nwill not rest until Skywalker,\r\nthe last Jedi, has been destroyed.\r\n\r\nWith the support of the REPUBLIC,\r\nGeneral Leia Organa leads a\r\nbrave RESISTANCE. She is\r\ndesperate to find her brother\r\nLuke and gain his help in\r\nrestoring peace and justice\r\nto the galaxy.\r\n\r\nLeia has sent her most daring\r\npilot on a secret mission to Jakku,\r\nwhere an old ally has discovered\r\na clue to Luke's whereabouts....",
-            "J.J. Abrams", "Kathleen Kennedy, J.J. Abrams, Bryan Burk", "2015-12-18");
-        
-        CreateFilm("lastjedi", "The Last Jedi", 8,
-            "The FIRST ORDER reigns.\r\nHaving decimated the peaceful\r\nRepublic, Supreme Leader Snoke\r\nnow deploys the merciless\r\nlegions to seize military control\r\nof the galaxy.\r\n\r\nOnly General Leia Organa's\r\nband of RESISTANCE fighters\r\nstand against the rising tyranny,\r\ncertain that Jedi Master Luke\r\nSkywalker will return and restore\r\na spark of hope to the fight.\r\n\r\nBut the Resistance has been\r\nexposed. As the First Order\r\nspeeds toward the rebel base,\r\nthe brave heroes mount a\r\ndesperate escape....",
-            "Rian Johnson", "Kathleen Kennedy, Ram Bergman", "2017-12-15");
-        
-        CreateFilm("skywalker", "The Rise of Skywalker", 9,
-            "The dead speak! The galaxy\r\nhas heard a mysterious\r\nbroadcast, a threat of REVENGE\r\nin the sinister voice of the late\r\nEMPEROR PALPATINE.\r\n\r\nGENERAL LEIA ORGANA\r\ndispatches secret agents to\r\ngather intelligence, while REY,\r\nthe last hope of the Jedi,\r\ntrains for battle against the\r\ndiabolical FIRST ORDER.\r\n\r\nMeanwhile, Supreme Leader\r\nKYLO REN rages in search of\r\nthe phantom Emperor,\r\ndetermined to destroy any\r\nthreat to his power....",
-            "J.J. Abrams", "Kathleen Kennedy, J.J. Abrams, Michelle Rejwan", "2019-12-20");
+        CreateFilm("jedi", "Return of the Jedi", 6,
+            "Luke Skywalker has returned to\r\nhis home planet of Tatooine in\r\nan attempt to rescue his\r\nfriend Han Solo from the\r\nclutches of the vile gangster\r\nJabba the Hutt.\r\n\r\nLittle does Luke know that the\r\nGALACTIC EMPIRE has secretly\r\nbegun construction on a new\r\narmored space station even\r\nmore powerful than the first\r\ndreaded Death Star.\r\n\r\nWhen completed, this ultimate\r\nweapon will spell certain doom\r\nfor the small band of rebels\r\nstruggling to restore freedom\r\nto the galaxy...",
+            "Richard Marquand", "Howard G. Kazanjian, George Lucas, Rick McCallum", "1983-05-25");
         
         // ==================== STARSHIPS ====================
         
@@ -750,165 +622,12 @@ type Vehicle {
         // Qui-Gon Jinn
         CreateCharacter("quigon", "Qui-Gon Jinn", "Human", new[] { "NEWHOPE" },
             height: 193, mass: 89, hairColor: "brown", skinColor: "fair", eyeColor: "blue", birthYear: "92BBY",
-            filmIds: new[] { "phantom" });
+            filmIds: new[] { "newhope" });
         
         // Nute Gunray
         CreateCharacter("nute", "Nute Gunray", "Human", new[] { "NEWHOPE" },
             height: 191, mass: 90, eyeColor: "red", birthYear: "unknown",
-            filmIds: new[] { "phantom", "clones", "sith" });
-        
-        // ==================== PREQUEL TRILOGY CHARACTERS ====================
-        
-        // Padmé Amidala
-        CreateCharacter("padme", "Padmé Amidala", "Human", new[] { "NEWHOPE", "EMPIRE", "JEDI" },
-            homePlanetId: "naboo", height: 165, mass: 45, hairColor: "brown", skinColor: "light", eyeColor: "brown", birthYear: "46BBY",
-            filmIds: new[] { "phantom", "clones", "sith" });
-        
-        // Jar Jar Binks
-        CreateCharacter("jarjar", "Jar Jar Binks", "Human", new[] { "NEWHOPE", "EMPIRE", "JEDI" },
-            homePlanetId: "naboo", height: 196, mass: 66, eyeColor: "orange", birthYear: "52BBY",
-            filmIds: new[] { "phantom", "clones", "sith" });
-        
-        // Mace Windu
-        CreateCharacter("mace", "Mace Windu", "Human", new[] { "NEWHOPE", "EMPIRE", "JEDI" },
-            height: 188, mass: 84, hairColor: "none", skinColor: "dark", eyeColor: "brown", birthYear: "72BBY",
-            filmIds: new[] { "phantom", "clones", "sith" });
-        
-        // Ki-Adi-Mundi
-        CreateCharacter("kiadi", "Ki-Adi-Mundi", "Human", new[] { "NEWHOPE", "EMPIRE", "JEDI" },
-            height: 198, mass: 82, hairColor: "white", skinColor: "pale", eyeColor: "yellow", birthYear: "92BBY",
-            filmIds: new[] { "phantom", "clones", "sith" });
-        
-        // Kit Fisto
-        CreateCharacter("kitfisto", "Kit Fisto", "Human", new[] { "NEWHOPE", "EMPIRE", "JEDI" },
-            height: 196, mass: 87, eyeColor: "black", birthYear: "unknown",
-            filmIds: new[] { "phantom", "clones", "sith" });
-        
-        // Aayla Secura
-        CreateCharacter("aayla", "Aayla Secura", "Human", new[] { "EMPIRE", "JEDI" },
-            height: 178, mass: 55, hairColor: "none", eyeColor: "brown", birthYear: "48BBY",
-            filmIds: new[] { "clones", "sith" });
-        
-        // Plo Koon
-        CreateCharacter("plokoon", "Plo Koon", "Human", new[] { "NEWHOPE", "EMPIRE", "JEDI" },
-            height: 188, mass: 80, eyeColor: "black", birthYear: "22BBY",
-            filmIds: new[] { "phantom", "clones", "sith" });
-        
-        // Shaak Ti
-        CreateCharacter("shaakti", "Shaak Ti", "Human", new[] { "EMPIRE", "JEDI" },
-            height: 178, mass: 57, eyeColor: "black", birthYear: "unknown",
-            filmIds: new[] { "clones", "sith" });
-        
-        // Count Dooku
-        CreateCharacter("dooku", "Count Dooku", "Human", new[] { "EMPIRE", "JEDI" },
-            height: 193, mass: 80, hairColor: "white", skinColor: "fair", eyeColor: "brown", birthYear: "102BBY",
-            filmIds: new[] { "clones", "sith" });
-        
-        // General Grievous
-        CreateCharacter("grievous", "General Grievous", "Droid", new[] { "JEDI" },
-            primaryFunction: "Military Commander",
-            height: 216, mass: 159, eyeColor: "yellow", birthYear: "unknown",
-            filmIds: new[] { "sith" });
-        
-        // Jango Fett
-        CreateCharacter("jango", "Jango Fett", "Human", new[] { "EMPIRE" },
-            height: 183, mass: 79, hairColor: "black", skinColor: "tan", eyeColor: "brown", birthYear: "66BBY",
-            filmIds: new[] { "clones" },
-            starshipIds: new[] { "slave1" });
-        
-        // Zam Wesell
-        CreateCharacter("zam", "Zam Wesell", "Human", new[] { "EMPIRE" },
-            height: 168, mass: 55, hairColor: "blonde", eyeColor: "yellow", birthYear: "unknown",
-            filmIds: new[] { "clones" });
-        
-        // Bail Organa
-        CreateCharacter("bail", "Bail Organa", "Human", new[] { "NEWHOPE", "EMPIRE", "JEDI" },
-            homePlanetId: "alderaan", height: 191, mass: null, hairColor: "black", skinColor: "tan", eyeColor: "brown", birthYear: "67BBY",
-            filmIds: new[] { "clones", "sith" });
-        
-        // Captain Rex
-        CreateCharacter("rex", "Captain Rex", "Human", new[] { "EMPIRE", "JEDI" },
-            height: 183, mass: 78, hairColor: "black", skinColor: "tan", eyeColor: "brown", birthYear: "32BBY",
-            filmIds: new[] { "clones", "sith" });
-        
-        // Commander Cody
-        CreateCharacter("cody", "Commander Cody", "Human", new[] { "JEDI" },
-            height: 183, mass: 78, hairColor: "black", skinColor: "tan", eyeColor: "brown", birthYear: "32BBY",
-            filmIds: new[] { "sith" });
-        
-        // Watto
-        CreateCharacter("watto", "Watto", "Human", new[] { "NEWHOPE" },
-            homePlanetId: "tatooine", height: 137, mass: null, eyeColor: "yellow", birthYear: "unknown",
-            filmIds: new[] { "phantom", "clones" });
-        
-        // Sebulba
-        CreateCharacter("sebulba", "Sebulba", "Human", new[] { "NEWHOPE" },
-            homePlanetId: "tatooine", height: 112, mass: 40, eyeColor: "orange", birthYear: "unknown",
-            filmIds: new[] { "phantom" });
-        
-        // Shmi Skywalker
-        CreateCharacter("shmi", "Shmi Skywalker", "Human", new[] { "NEWHOPE", "EMPIRE" },
-            homePlanetId: "tatooine", height: 163, mass: null, hairColor: "black", skinColor: "fair", eyeColor: "brown", birthYear: "72BBY",
-            filmIds: new[] { "phantom", "clones" });
-        
-        // ==================== SEQUEL TRILOGY / ADDITIONAL CHARACTERS ====================
-        
-        // Rey
-        CreateCharacter("rey", "Rey", "Human", new[] { "JEDI" },
-            homePlanetId: "tatooine", height: 170, mass: null, hairColor: "brown", skinColor: "light", eyeColor: "hazel", birthYear: "15ABY",
-            filmIds: new[] { "awakens", "lastjedi", "skywalker" });
-        
-        // Finn (FN-2187)
-        CreateCharacter("finn", "Finn", "Human", new[] { "JEDI" },
-            height: 178, mass: 73, hairColor: "black", skinColor: "dark", eyeColor: "dark", birthYear: "11ABY",
-            filmIds: new[] { "awakens", "lastjedi", "skywalker" });
-        
-        // Poe Dameron
-        CreateCharacter("poe", "Poe Dameron", "Human", new[] { "JEDI" },
-            height: 172, mass: 80, hairColor: "brown", skinColor: "light", eyeColor: "brown", birthYear: "2ABY",
-            filmIds: new[] { "awakens", "lastjedi", "skywalker" },
-            starshipIds: new[] { "xwing" });
-        
-        // Kylo Ren
-        CreateCharacter("kylo", "Kylo Ren", "Human", new[] { "JEDI" },
-            height: 189, mass: 89, hairColor: "black", skinColor: "light", eyeColor: "brown", birthYear: "5ABY",
-            filmIds: new[] { "awakens", "lastjedi", "skywalker" });
-        
-        // BB-8
-        CreateCharacter("bb8", "BB-8", "Droid", new[] { "JEDI" },
-            primaryFunction: "Astromech",
-            height: 67, mass: 18, eyeColor: "black",
-            filmIds: new[] { "awakens", "lastjedi", "skywalker" });
-        
-        // Captain Phasma
-        CreateCharacter("phasma", "Captain Phasma", "Human", new[] { "JEDI" },
-            height: 200, mass: null, eyeColor: "unknown", birthYear: "unknown",
-            filmIds: new[] { "awakens", "lastjedi" });
-        
-        // Supreme Leader Snoke
-        CreateCharacter("snoke", "Supreme Leader Snoke", "Human", new[] { "JEDI" },
-            height: 216, mass: null, hairColor: "none", eyeColor: "blue", birthYear: "unknown",
-            filmIds: new[] { "awakens", "lastjedi" });
-        
-        // General Hux
-        CreateCharacter("hux", "General Hux", "Human", new[] { "JEDI" },
-            height: 185, mass: null, hairColor: "red", skinColor: "pale", eyeColor: "blue", birthYear: "unknown",
-            filmIds: new[] { "awakens", "lastjedi", "skywalker" });
-        
-        // Maz Kanata
-        CreateCharacter("maz", "Maz Kanata", "Human", new[] { "JEDI" },
-            height: 124, mass: null, eyeColor: "brown", birthYear: "unknown",
-            filmIds: new[] { "awakens", "lastjedi", "skywalker" });
-        
-        // Rose Tico
-        CreateCharacter("rose", "Rose Tico", "Human", new[] { "JEDI" },
-            height: 155, mass: null, hairColor: "black", skinColor: "light", eyeColor: "dark", birthYear: "unknown",
-            filmIds: new[] { "lastjedi", "skywalker" });
-        
-        // Vice Admiral Holdo
-        CreateCharacter("holdo", "Amilyn Holdo", "Human", new[] { "JEDI" },
-            height: 175, mass: null, hairColor: "purple", skinColor: "light", eyeColor: "blue", birthYear: "unknown",
-            filmIds: new[] { "lastjedi" });
+            filmIds: new[] { "newhope" });
         
         Console.WriteLine($"✅ Created {_characterTable.SelectAll().Count()} characters");
         Console.WriteLine($"✅ Created {_filmTable.SelectAll().Count()} films");
@@ -916,177 +635,7 @@ type Vehicle {
         Console.WriteLine($"✅ Created {_speciesTable.SelectAll().Count()} species");
         Console.WriteLine($"✅ Created {_starshipTable.SelectAll().Count()} starships");
         Console.WriteLine($"✅ Created {_vehicleTable.SelectAll().Count()} vehicles");
-        
-        // Now update reverse relationships by scanning Character records
-        UpdateReverseRelationships();
-        
         Console.WriteLine("\n🌟 Star Wars database ready!");
-    }
-    
-    private void UpdateReverseRelationships()
-    {
-        Console.WriteLine("\n🔗 Updating reverse relationships...");
-        
-        // Scan all characters and build reverse relationship maps
-        var filmCharacters = new Dictionary<string, List<string>>();
-        var starshipPilots = new Dictionary<string, List<string>>();
-        var vehiclePilots = new Dictionary<string, List<string>>();
-        var planetResidents = new Dictionary<string, List<string>>();
-        
-        foreach (var (charId, charJson) in _characterTable.SelectAll())
-        {
-            var charData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(charJson);
-            if (charData == null) continue;
-            
-            // Film → characters relationship
-            if (charData.TryGetValue("filmIds", out var filmIdsElem) && filmIdsElem.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var filmIdElem in filmIdsElem.EnumerateArray())
-                {
-                    var filmId = filmIdElem.GetString();
-                    if (!string.IsNullOrEmpty(filmId))
-                    {
-                        if (!filmCharacters.ContainsKey(filmId))
-                            filmCharacters[filmId] = new List<string>();
-                        filmCharacters[filmId].Add(charId);
-                    }
-                }
-            }
-            
-            // Starship → pilots relationship
-            if (charData.TryGetValue("starshipIds", out var starshipIdsElem) && starshipIdsElem.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var starshipIdElem in starshipIdsElem.EnumerateArray())
-                {
-                    var starshipId = starshipIdElem.GetString();
-                    if (!string.IsNullOrEmpty(starshipId))
-                    {
-                        if (!starshipPilots.ContainsKey(starshipId))
-                            starshipPilots[starshipId] = new List<string>();
-                        starshipPilots[starshipId].Add(charId);
-                    }
-                }
-            }
-            
-            // Vehicle → pilots relationship
-            if (charData.TryGetValue("vehicleIds", out var vehicleIdsElem) && vehicleIdsElem.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var vehicleIdElem in vehicleIdsElem.EnumerateArray())
-                {
-                    var vehicleId = vehicleIdElem.GetString();
-                    if (!string.IsNullOrEmpty(vehicleId))
-                    {
-                        if (!vehiclePilots.ContainsKey(vehicleId))
-                            vehiclePilots[vehicleId] = new List<string>();
-                        vehiclePilots[vehicleId].Add(charId);
-                    }
-                }
-            }
-            
-            // Planet → residents relationship
-            if (charData.TryGetValue("homePlanetId", out var homePlanetIdElem) && homePlanetIdElem.ValueKind == JsonValueKind.String)
-            {
-                var planetId = homePlanetIdElem.GetString();
-                if (!string.IsNullOrEmpty(planetId))
-                {
-                    if (!planetResidents.ContainsKey(planetId))
-                        planetResidents[planetId] = new List<string>();
-                    planetResidents[planetId].Add(charId);
-                }
-            }
-        }
-        
-        // Update Film records with characterIds
-        foreach (var (filmId, filmJson) in _filmTable.SelectAll())
-        {
-            var filmData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(filmJson);
-            if (filmData == null) continue;
-            
-            var mutableFilmData = filmData.ToDictionary(kvp => kvp.Key, kvp => (object?)ConvertJsonElement(kvp.Value));
-            if (filmCharacters.TryGetValue(filmId, out var characters))
-            {
-                mutableFilmData["characterIds"] = characters.ToArray();
-            }
-            
-            _filmTable.Insert(filmId, JsonSerializer.Serialize(mutableFilmData));
-        }
-        
-        // Update Planet records with residentIds
-        foreach (var (planetId, planetJson) in _planetTable.SelectAll())
-        {
-            var planetData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(planetJson);
-            if (planetData == null) continue;
-            
-            var mutablePlanetData = planetData.ToDictionary(kvp => kvp.Key, kvp => (object?)ConvertJsonElement(kvp.Value));
-            if (planetResidents.TryGetValue(planetId, out var residents))
-            {
-                mutablePlanetData["residentIds"] = residents.ToArray();
-            }
-            else
-            {
-                mutablePlanetData["residentIds"] = Array.Empty<string>();
-            }
-            
-            _planetTable.Insert(planetId, JsonSerializer.Serialize(mutablePlanetData));
-        }
-        
-        // Update Starship records with pilotIds  
-        foreach (var (starshipId, starshipJson) in _starshipTable.SelectAll())
-        {
-            var starshipData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(starshipJson);
-            if (starshipData == null) continue;
-            
-            var mutableStarshipData = starshipData.ToDictionary(kvp => kvp.Key, kvp => (object?)ConvertJsonElement(kvp.Value));
-            if (starshipPilots.TryGetValue(starshipId, out var pilots))
-            {
-                mutableStarshipData["pilotIds"] = pilots.ToArray();
-            }
-            else
-            {
-                mutableStarshipData["pilotIds"] = Array.Empty<string>();
-            }
-            
-            _starshipTable.Insert(starshipId, JsonSerializer.Serialize(mutableStarshipData));
-        }
-        
-        // Update Vehicle records with pilotIds
-        foreach (var (vehicleId, vehicleJson) in _vehicleTable.SelectAll())
-        {
-            var vehicleData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(vehicleJson);
-            if (vehicleData == null) continue;
-            
-            var mutableVehicleData = vehicleData.ToDictionary(kvp => kvp.Key, kvp => (object?)ConvertJsonElement(kvp.Value));
-            if (vehiclePilots.TryGetValue(vehicleId, out var pilots))
-            {
-                mutableVehicleData["pilotIds"] = pilots.ToArray();
-            }
-            else
-            {
-                mutableVehicleData["pilotIds"] = Array.Empty<string>();
-            }
-            
-            _vehicleTable.Insert(vehicleId, JsonSerializer.Serialize(mutableVehicleData));
-        }
-        
-        Console.WriteLine($"   ✅ Updated {filmCharacters.Count} films with character references");
-        Console.WriteLine($"   ✅ Updated {planetResidents.Count} planets with resident references");
-        Console.WriteLine($"   ✅ Updated {starshipPilots.Count} starships with pilot references");
-        Console.WriteLine($"   ✅ Updated {vehiclePilots.Count} vehicles with pilot references");
-    }
-    
-    private object? ConvertJsonElement(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.Null => null,
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Number => element.TryGetInt64(out var l) ? l : element.GetDouble(),
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.Array => element.EnumerateArray().Select(ConvertJsonElement).ToArray(),
-            JsonValueKind.Object => element.EnumerateObject().ToDictionary(p => p.Name, p => ConvertJsonElement(p.Value)),
-            _ => null
-        };
     }
     
     // Helper methods for creating records

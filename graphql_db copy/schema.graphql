@@ -165,6 +165,7 @@ type Mutation {
 }
 
 # Input types for mutations
+
 input CharacterInput {
   name: String!
   characterType: String!

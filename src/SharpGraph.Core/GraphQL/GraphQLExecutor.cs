@@ -47,6 +47,17 @@ public class GraphQLExecutor
         _inputTypes[inputType.Name] = inputType;
     }
     
+    public void RegisterInputType(InputDefinition inputDef)
+    {
+        // Convert InputDefinition to TypeDefinition for introspection
+        var typeDef = new TypeDefinition
+        {
+            Name = inputDef.Name,
+            Fields = inputDef.Fields
+        };
+        _inputTypes[inputDef.Name] = typeDef;
+    }
+    
     public void RegisterGeneratedObjectType(string typeName, Dictionary<string, object?> typeDefinition)
     {
         // Register dynamically generated object types (e.g., Connection types)

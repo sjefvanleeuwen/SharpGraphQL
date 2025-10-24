@@ -32,7 +32,7 @@ public class FileManager : IDisposable
             filePath,
             FileMode.OpenOrCreate,
             FileAccess.ReadWrite,
-            FileShare.Read,
+            FileShare.ReadWrite,
             bufferSize: Page.PageSize,
             FileOptions.RandomAccess
         );

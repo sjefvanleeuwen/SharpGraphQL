@@ -76,6 +76,8 @@ public class GraphQLParser
             TokenType.BraceOpen => ParseOperationDefinition(),
             TokenType.Fragment => ParseFragmentDefinition(),
             TokenType.Type => ParseTypeDefinition(),
+            TokenType.Enum => ParseEnumDefinition(),
+            TokenType.Input => ParseInputDefinition(),
             _ => throw new GraphQLSyntaxException($"Unexpected token: {CurrentType}")
         };
     }
@@ -323,7 +325,6 @@ public class GraphQLParser
             TokenType.BracketOpen => ParseListValue(),
             TokenType.BraceOpen => ParseObjectValue(),
             TokenType.Dollar => ParseVariableValue(),
-            TokenType.Name => ParseEnumValue(),  // Handle enum values (bare identifiers)
             _ => throw new GraphQLSyntaxException($"Unexpected value type: {CurrentType}")
         };
     }
@@ -360,14 +361,6 @@ public class GraphQLParser
     {
         Advance();
         return JsonDocument.Parse("null").RootElement;
-    }
-    
-    private JsonElement ParseEnumValue()
-    {
-        // Enum values are bare identifiers, returned as strings
-        var value = CurrentValue;
-        Advance();
-        return JsonDocument.Parse($"\"{value}\"").RootElement;
     }
     
     private JsonElement ParseListValue()
@@ -452,6 +445,51 @@ public class GraphQLParser
         return typeDef;
     }
     
+    private EnumDefinition ParseEnumDefinition()
+    {
+        Expect(TokenType.Enum);
+        var enumDef = new EnumDefinition { Name = ExpectName() };
+        Expect(TokenType.BraceOpen);
+        
+        while (CurrentType != TokenType.BraceClose && CurrentType != TokenType.EOF)
+        {
+            if (CurrentType == TokenType.Name)
+            {
+                enumDef.Values.Add(CurrentValue);
+                Advance();
+            }
+            else
+            {
+                throw new GraphQLSyntaxException($"Expected enum value, got {CurrentType}");
+            }
+        }
+        
+        Expect(TokenType.BraceClose);
+        return enumDef;
+    }
+    
+    private InputDefinition ParseInputDefinition()
+    {
+        Expect(TokenType.Input);
+        var inputDef = new InputDefinition { Name = ExpectName() };
+        Expect(TokenType.BraceOpen);
+        
+        while (CurrentType != TokenType.BraceClose && CurrentType != TokenType.EOF)
+        {
+            if (CurrentType == TokenType.Name)
+            {
+                inputDef.Fields.Add(ParseFieldDefinition());
+            }
+            else
+            {
+                throw new GraphQLSyntaxException($"Expected field definition, got {CurrentType}");
+            }
+        }
+        
+        Expect(TokenType.BraceClose);
+        return inputDef;
+    }
+    
     private FieldDefinition ParseFieldDefinition()
     {
         var fieldDef = new FieldDefinition { Name = ExpectName() };
@@ -529,4 +567,3 @@ public class GraphQLParser
         throw new GraphQLSyntaxException($"Expected name but got {CurrentType} at {CurrentLine}:{CurrentColumn}");
     }
 }
-

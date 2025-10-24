@@ -1,4 +1,4 @@
-using SharpGraph.Db.Storage;
+using SharpGraph.Core.Storage;
 using Xunit;
 
 namespace SharpGraph.Tests.Storage;
@@ -364,5 +364,3 @@ public class IndexManagerTests
     
     #endregion
 }
-
-
