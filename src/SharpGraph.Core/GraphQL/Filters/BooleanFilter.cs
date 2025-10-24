@@ -70,3 +70,4 @@ public class BooleanFilter
         return false;
     }
 }
+

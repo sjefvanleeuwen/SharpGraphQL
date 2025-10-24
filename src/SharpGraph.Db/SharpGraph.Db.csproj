@@ -2,19 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="3.0.313" />
     <PackageReference Include="MessagePack.Annotations" Version="3.0.313" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\SharpGraph.Db\SharpGraph.Db.csproj" />
   </ItemGroup>
 
 </Project>

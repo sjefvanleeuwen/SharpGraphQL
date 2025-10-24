@@ -1,15 +1,17 @@
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// B-tree index for range queries and ordered scans
 /// Supports efficient operations like: find all records where value > X, or get records in sorted order
+/// OPTIMIZED: Uses ReaderWriterLockSlim for concurrent reads
 /// </summary>
 /// <typeparam name="TKey">Type of the indexed value (must be comparable)</typeparam>
-public class BTreeIndex<TKey> where TKey : IComparable<TKey>
+public class BTreeIndex<TKey> : IDisposable where TKey : IComparable<TKey>
 {
     private BTreeNode<TKey>? _root;
     private readonly int _order; // Maximum number of children per node
-    private readonly object _lock = new();
+    private readonly ReaderWriterLockSlim _lock = new();
+    private bool _disposed;
     
     public BTreeIndex(int order = 32)
     {
@@ -22,7 +24,8 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
     /// </summary>
     public void Insert(TKey key, string recordId)
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             if (_root == null)
             {
@@ -44,6 +47,10 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
                 InsertNonFull(_root, key, recordId);
             }
         }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
     
     /// <summary>
@@ -51,12 +58,17 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
     /// </summary>
     public List<string> Find(TKey key)
     {
-        lock (_lock)
+        _lock.EnterReadLock();
+        try
         {
             if (_root == null)
                 return new List<string>();
             
             return FindInNode(_root, key);
+        }
+        finally
+        {
+            _lock.ExitReadLock();
         }
     }
     
@@ -65,7 +77,8 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
     /// </summary>
     public List<string> FindRange(TKey minKey, TKey maxKey)
     {
-        lock (_lock)
+        _lock.EnterReadLock();
+        try
         {
             var results = new List<string>();
             if (_root == null)
@@ -74,6 +87,10 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
             FindRangeInNode(_root, minKey, maxKey, results);
             return results;
         }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
     }
     
     /// <summary>
@@ -81,7 +98,8 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
     /// </summary>
     public List<string> FindGreaterThan(TKey minKey)
     {
-        lock (_lock)
+        _lock.EnterReadLock();
+        try
         {
             var results = new List<string>();
             if (_root == null)
@@ -90,6 +108,10 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
             FindGreaterThanInNode(_root, minKey, results);
             return results;
         }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
     }
     
     /// <summary>
@@ -97,7 +119,8 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
     /// </summary>
     public List<string> FindLessThan(TKey maxKey)
     {
-        lock (_lock)
+        _lock.EnterReadLock();
+        try
         {
             var results = new List<string>();
             if (_root == null)
@@ -106,6 +129,10 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
             FindLessThanInNode(_root, maxKey, results);
             return results;
         }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
     }
     
     /// <summary>
@@ -113,7 +140,8 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
     /// </summary>
     public List<string> GetAllSorted()
     {
-        lock (_lock)
+        _lock.EnterReadLock();
+        try
         {
             var results = new List<string>();
             if (_root == null)
@@ -121,6 +149,10 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
             
             TraverseInOrder(_root, results);
             return results;
+        }
+        finally
+        {
+            _lock.ExitReadLock();
         }
     }
     
@@ -130,7 +162,8 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
     /// </summary>
     public void Remove(TKey key)
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             if (_root == null)
                 return;
@@ -149,6 +182,10 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
                     _root = null; // Tree is now empty
                 }
             }
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
     
@@ -773,6 +810,15 @@ public class BTreeIndex<TKey> where TKey : IComparable<TKey>
         return node;
     }
     
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _lock?.Dispose();
+            _disposed = true;
+        }
+    }
+    
     #endregion
 }
 
@@ -796,3 +842,4 @@ internal class BTreeNode<TKey> where TKey : IComparable<TKey>
         Children = new List<BTreeNode<TKey>>();
     }
 }
+

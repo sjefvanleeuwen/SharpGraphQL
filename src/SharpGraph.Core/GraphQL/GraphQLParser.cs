@@ -529,3 +529,4 @@ public class GraphQLParser
         throw new GraphQLSyntaxException($"Expected name but got {CurrentType} at {CurrentLine}:{CurrentColumn}");
     }
 }
+

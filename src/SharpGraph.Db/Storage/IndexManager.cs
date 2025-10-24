@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Manages multiple indexes for a table (hash index for primary key + B-tree indexes for columns)
@@ -512,3 +512,4 @@ public class IndexManager
     
     #endregion
 }
+

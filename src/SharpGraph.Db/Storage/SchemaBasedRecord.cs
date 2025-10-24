@@ -1,7 +1,7 @@
 using MessagePack;
 using System.Text.Json;
 
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Optimized record that stores only values without field names
@@ -189,3 +189,4 @@ public class SchemaBasedRecordPage
         return Records.Sum(r => r.EstimatedSize()) + 100; // + overhead
     }
 }
+

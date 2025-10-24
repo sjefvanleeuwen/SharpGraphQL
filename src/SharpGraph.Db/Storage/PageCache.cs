@@ -1,15 +1,17 @@
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// LRU (Least Recently Used) cache for pages
 /// Keeps frequently accessed pages in memory to reduce disk I/O
+/// OPTIMIZED: Uses ReaderWriterLockSlim for concurrent reads
 /// </summary>
-public class PageCache
+public class PageCache : IDisposable
 {
     private readonly int _capacity;
     private readonly Dictionary<long, CacheNode> _cache;
     private readonly LinkedList<CacheNode> _lruList;
-    private readonly object _lock = new();
+    private readonly ReaderWriterLockSlim _lock = new();
+    private bool _disposed;
     
     private class CacheNode
     {
@@ -36,15 +38,24 @@ public class PageCache
     /// </summary>
     public bool TryGet(long pageId, out byte[] pageData)
     {
-        lock (_lock)
+        _lock.EnterUpgradeableReadLock();
+        try
         {
             if (_cache.TryGetValue(pageId, out var node))
             {
                 // Move to front (most recently used)
                 if (node.ListNode != null)
                 {
-                    _lruList.Remove(node.ListNode);
-                    node.ListNode = _lruList.AddFirst(node);
+                    _lock.EnterWriteLock();
+                    try
+                    {
+                        _lruList.Remove(node.ListNode);
+                        node.ListNode = _lruList.AddFirst(node);
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
                 }
                 
                 pageData = node.PageData;
@@ -54,6 +65,10 @@ public class PageCache
             pageData = Array.Empty<byte>();
             return false;
         }
+        finally
+        {
+            _lock.ExitUpgradeableReadLock();
+        }
     }
     
     /// <summary>
@@ -61,7 +76,8 @@ public class PageCache
     /// </summary>
     public void Put(long pageId, byte[] pageData)
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             if (_cache.TryGetValue(pageId, out var existingNode))
             {
@@ -92,6 +108,10 @@ public class PageCache
                 }
             }
         }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
     
     /// <summary>
@@ -99,7 +119,8 @@ public class PageCache
     /// </summary>
     public void Invalidate(long pageId)
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             if (_cache.TryGetValue(pageId, out var node))
             {
@@ -110,6 +131,10 @@ public class PageCache
                 _cache.Remove(pageId);
             }
         }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
     
     /// <summary>
@@ -117,10 +142,15 @@ public class PageCache
     /// </summary>
     public void Clear()
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             _cache.Clear();
             _lruList.Clear();
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
     
@@ -129,9 +159,24 @@ public class PageCache
     /// </summary>
     public (int Size, int Capacity, double FillRatio) GetStats()
     {
-        lock (_lock)
+        _lock.EnterReadLock();
+        try
         {
             return (_cache.Count, _capacity, (double)_cache.Count / _capacity);
         }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+    
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _lock?.Dispose();
+            _disposed = true;
+        }
     }
 }
+

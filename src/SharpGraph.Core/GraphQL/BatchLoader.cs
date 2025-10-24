@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SharpGraph.Db.Storage;
 
 namespace SharpGraph.Core.GraphQL;
 
@@ -8,10 +9,10 @@ namespace SharpGraph.Core.GraphQL;
 /// </summary>
 public class BatchLoader
 {
-    private readonly Dictionary<string, Storage.Table> _tables;
+    private readonly Dictionary<string, Table> _tables;
     private readonly Dictionary<string, Dictionary<string, string>> _cache;
     
-    public BatchLoader(Dictionary<string, Storage.Table> tables)
+    public BatchLoader(Dictionary<string, Table> tables)
     {
         _tables = tables;
         _cache = new Dictionary<string, Dictionary<string, string>>();
@@ -110,3 +111,4 @@ public class BatchLoader
         tableCache[id] = record;
     }
 }
+

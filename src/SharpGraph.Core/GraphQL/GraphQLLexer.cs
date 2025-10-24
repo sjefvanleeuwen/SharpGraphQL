@@ -758,3 +758,4 @@ public class GraphQLSyntaxException : Exception
 {
     public GraphQLSyntaxException(string message) : base(message) { }
 }
+

@@ -1,4 +1,4 @@
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Table with MemTable + page-based storage
@@ -125,30 +125,13 @@ public class Table : IDisposable
         }
     }
     
-    public static Table Create(string name, string dbPath, string? graphQLTypeDef = null)
+    public static Table Create(string name, string dbPath, List<ColumnDefinition>? columns = null)
     {
         var table = new Table(name, dbPath);
         
-        if (graphQLTypeDef != null)
+        if (columns != null)
         {
-            table._metadata.GraphQLTypeDef = graphQLTypeDef;
-            
-            // Parse the GraphQL schema to extract columns
-            var parser = new GraphQLSchemaParser(graphQLTypeDef);
-            var types = parser.ParseTypes();
-            
-            // Try to find matching type (exact, case-insensitive, or singular/plural variants)
-            var matchingType = types.FirstOrDefault(t => t.Name == name) // Exact match
-                ?? types.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase)) // Case-insensitive
-                ?? types.FirstOrDefault(t => string.Equals(t.Name, name.TrimEnd('s'), StringComparison.OrdinalIgnoreCase)) // Try removing 's'
-                ?? types.FirstOrDefault(t => string.Equals(t.Name + "s", name, StringComparison.OrdinalIgnoreCase)) // Try adding 's'
-                ?? types.FirstOrDefault(); // Fallback to first type if only one exists
-            
-            if (matchingType != null)
-            {
-                var metadata = GraphQLSchemaParser.ToTableMetadata(matchingType);
-                table._metadata.Columns = metadata.Columns;
-            }
+            table._metadata.Columns = columns;
         }
         
         table.SaveMetadata();
@@ -538,11 +521,14 @@ public class Table : IDisposable
     
     public TableMetadata GetMetadata() => _metadata;
     
-    public void SetSchema(string graphQLTypeDef, List<ColumnDefinition> columns)
+    public void SetSchema(string? graphQLTypeDef, List<ColumnDefinition> columns)
     {
         lock (_lock)
         {
-            _metadata.GraphQLTypeDef = graphQLTypeDef;
+            if (graphQLTypeDef != null)
+            {
+                _metadata.GraphQLTypeDef = graphQLTypeDef;
+            }
             _metadata.Columns = columns;
             _metadata.UpdatedAt = DateTime.UtcNow;
             SaveMetadata();
@@ -708,3 +694,4 @@ public class Table : IDisposable
         _fileManager?.Dispose();
     }
 }
+

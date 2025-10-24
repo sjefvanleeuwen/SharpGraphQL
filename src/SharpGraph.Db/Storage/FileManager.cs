@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Manages page-based file I/O with caching
@@ -130,3 +130,4 @@ public class FileManager : IDisposable
         }
     }
 }
+

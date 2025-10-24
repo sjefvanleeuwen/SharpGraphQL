@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharpGraph.Core\SharpGraph.Core.csproj" />
+    <ProjectReference Include="..\SharpGraph.Db\SharpGraph.Db.csproj" />
   </ItemGroup>
 
 </Project>

@@ -139,3 +139,4 @@ public enum QueryMode
     Default,
     Insensitive
 }
+

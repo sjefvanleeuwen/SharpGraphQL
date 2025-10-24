@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Table metadata stored in page 0
@@ -125,3 +125,4 @@ public enum IndexType : byte
     Hash = 1,
     FullText = 2,
 }
+

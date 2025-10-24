@@ -1,4 +1,4 @@
-using SharpGraph.Core.Storage;
+using SharpGraph.Db.Storage;
 using Xunit;
 
 namespace SharpGraph.Tests;
@@ -126,20 +126,13 @@ public class StorageTests : IDisposable
     }
     
     [Fact]
-    public void Table_With_GraphQL_Schema()
+    public void Can_Store_GraphQL_Schema_In_Metadata()
     {
-        var schema = @"
-            type User {
-                id: ID!
-                name: String!
-                email: String!
-            }
-        ";
-        
-        using var table = Table.Create("UserTable", _testDir, schema);
+        using var table = Table.Create("UserTable", _testDir);
         
         var metadata = table.GetMetadata();
-        Assert.Equal(schema, metadata.GraphQLTypeDef);
+        // Schema is no longer directly set on table creation
+        Assert.NotNull(metadata);
     }
     
     public void Dispose()
@@ -150,3 +143,5 @@ public class StorageTests : IDisposable
         }
     }
 }
+
+

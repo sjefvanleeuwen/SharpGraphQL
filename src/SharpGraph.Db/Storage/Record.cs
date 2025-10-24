@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Basic key-value record
@@ -98,3 +98,4 @@ public class RecordPage
         return Records.Sum(r => r.EstimatedSize()) + 100; // + overhead
     }
 }
+

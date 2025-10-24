@@ -1,7 +1,7 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Fixed-size page (64KB) - the fundamental unit of storage
@@ -153,3 +153,4 @@ public enum PageType : byte
     Index = 2,
     Overflow = 3,
 }
+

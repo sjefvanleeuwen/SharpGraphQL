@@ -1,4 +1,4 @@
-using SharpGraph.Core.Storage;
+using SharpGraph.Db.Storage;
 using Xunit;
 
 namespace SharpGraph.Tests;
@@ -79,15 +79,19 @@ public class DebugPersistentIndexTest : IDisposable
             }
         }
 
-        // Step 1: Create table
+        // Parse schema to get columns (reuse existing parser and types)
+        var userType = types.FirstOrDefault(t => string.Equals(t.Name, "User", StringComparison.OrdinalIgnoreCase));
+        var parsedMetadata = userType != null ? SharpGraph.Core.GraphQLSchemaParser.ToTableMetadata(userType) : null;
+
+        // Step 1: Creating table
         Console.WriteLine("\n=== Step 1: Creating table ===");
-        using (var table = Table.Create(tableName, dbPath, schema))
+        using (var table = Table.Create(tableName, dbPath, parsedMetadata?.Columns))
         {
-            var metadata = table.GetMetadata();
-            Console.WriteLine($"Table created. Columns: {metadata?.Columns?.Count ?? 0}");
-            if (metadata?.Columns != null && metadata.Columns.Count > 0)
+            var tableMetadata = table.GetMetadata();
+            Console.WriteLine($"Table created. Columns: {tableMetadata?.Columns?.Count ?? 0}");
+            if (tableMetadata?.Columns != null && tableMetadata.Columns.Count > 0)
             {
-                foreach (var col in metadata.Columns)
+                foreach (var col in tableMetadata.Columns)
                 {
                     Console.WriteLine($"  - Column: {col.Name} ({col.ScalarType})");
                 }
@@ -163,3 +167,5 @@ public class DebugPersistentIndexTest : IDisposable
         }
     }
 }
+
+

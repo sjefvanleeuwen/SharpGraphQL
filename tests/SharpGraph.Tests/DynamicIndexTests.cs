@@ -236,3 +236,5 @@ public class DynamicIndexTests
         try { Directory.Delete(dbPath, true); } catch { }
     }
 }
+
+

@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using SharpGraph.Core;
 using SharpGraph.Core.GraphQL;
-using SharpGraph.Core.Storage;
+using SharpGraph.Db.Storage;
 
 namespace SharpGraph.Server;
 

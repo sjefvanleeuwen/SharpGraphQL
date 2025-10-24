@@ -128,3 +128,4 @@ public class InputValueDefinition : ASTNode
     public TypeNode Type { get; set; } = new NamedType { Name = "String" };
     public JsonElement? DefaultValue { get; set; }
 }
+

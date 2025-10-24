@@ -298,3 +298,4 @@ public class FilterEvaluator
         return result.ToList();
     }
 }
+

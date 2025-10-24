@@ -1,5 +1,5 @@
 using System.Text.Json;
-using SharpGraph.Core.Storage;
+using SharpGraph.Db.Storage;
 
 namespace SharpGraph.Core.GraphQL.Filters;
 
@@ -195,3 +195,4 @@ public class DynamicIndexOptimizer
         _fieldAccessCounts.Clear();
     }
 }
+

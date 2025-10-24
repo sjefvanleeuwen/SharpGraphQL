@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using SharpGraph.Core.Storage;
+using SharpGraph.Db.Storage;
 
 namespace SharpGraph.Core;
 
@@ -247,3 +247,4 @@ public class ParsedEnum
     public string Name { get; set; } = "";
     public List<string> Values { get; set; } = new();
 }
+

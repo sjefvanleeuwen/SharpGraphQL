@@ -1,7 +1,7 @@
 using System.Text;
 using MessagePack;
 
-namespace SharpGraph.Core.Storage;
+namespace SharpGraph.Db.Storage;
 
 /// <summary>
 /// Manages persistence of B-tree index structures to disk
@@ -188,3 +188,4 @@ public class BTreeNodeData<TKey> where TKey : IComparable<TKey>
     [Key(4)]
     public long PageId { get; set; } // This node's page ID
 }
+

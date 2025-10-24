@@ -1,5 +1,5 @@
 using System.Text.Json;
-using SharpGraph.Core.Storage;
+using SharpGraph.Db.Storage;
 using SharpGraph.Core.GraphQL.Filters;
 
 namespace SharpGraph.Core.GraphQL;
@@ -2040,3 +2040,4 @@ public class GraphQLExecutor
         return _indexOptimizer.GetStatistics();
     }
 }
+
