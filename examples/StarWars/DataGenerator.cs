@@ -253,7 +253,7 @@ public class StarWarsDataGenerator
 
         // Empire Strikes Back characters
         AddCharacter("boba", "Boba Fett", "Human", new[] { "EMPIRE", "JEDI" },
-            homePlanetId: "kamino", height: 183, mass: 78.2, hairColor: "black", skinColor: "fair", eyeColor: "brown", birthYear: "31.5BBY",
+            homePlanetId: "kamino", height: 183, mass: 78.2f, hairColor: "black", skinColor: "fair", eyeColor: "brown", birthYear: "31.5BBY",
             filmIds: new[] { "empire", "jedi", "clones" },
             starshipIds: new[] { "slave1" });
 
